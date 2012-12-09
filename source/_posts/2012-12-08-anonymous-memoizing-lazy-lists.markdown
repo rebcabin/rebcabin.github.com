@@ -291,11 +291,15 @@ s7 = Y[k \[Function] n \[Function]
         k[{n[[1]] + 1, dict}] &}]
     ][{1, {_ -> Null}}];
 ```
-Now an otherwise inconceivable computation such as `fib[150]` can be done in a reasonable time. 
+Now our regular example is much faster and an otherwise inconceivable computation such as `fib[150]` can be done in a reasonable time. 
 ```
-In[48]:= Block[{$RecursionLimit = 2000}, Timing[value[s7, 150][[1]]]]
-Out[48]= {1.330688, 16130531424904581415797907386349}
+In[48]:= Timing[
+ value[s7, #][[1]] & /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
+Out[48]= {0.068064, {1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 987, 10946}}
+
+In[49]:= Block[{$RecursionLimit = 2000}, Timing[value[s7, 150][[1]]]]
+Out[49]= {1.308640, 16130531424904581415797907386349}
 ```
 ## CONCLUSION
 
-Many improvements can be made to this, such as getting rid of the mutable variables in the Module by a monadic bind and refactoring the code for readability. However, we have shown a general technique for creating lazy memoizing lists without introducing names or session state into an evaluator or interpreter.
+Many improvements can be made to this, such as getting rid of the mutable variables in the `Module` by a monadic bind and refactoring the code for readability. However, we have shown a general technique for creating lazy memoizing lists without introducing names or session state into an evaluator or interpreter.
