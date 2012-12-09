@@ -8,7 +8,7 @@ categories: [Mathematica, Lambda Calculus, Remotable Code]
 A vastly prettier version of this blog can be found 
 in the CDF file here: [https://dl.dropbox.com/u/1997638/LazyLambda003.cdf](https://dl.dropbox.com/u/1997638/LazyLambda003.cdf). Wolfram's free CDF reader is found at [http://www.wolfram.com/cdf-player/](http://www.wolfram.com/cdf-player/).
 
-One reason to care about anonymized computations is that naming things costs memory. Naming things means writing definitions and storing them in tables. A huge advantage of compiled programming languages is that all this name management is done at compile time and there is no run-time cost for it in "release builds" that have names stripped out. Interpreted languages can have some of this cost savings if we can avoid naming things.
+One reason to care about anonymized computations is that naming things costs memory, and it's the kind of memory that lasts from one computation to another -- session memory. Naming things means writing definitions and storing them in tables for access in later computations. Building up big memoization tables as definitions can cost a LOT of memory. We can save this cost if we can avoid naming things, storing information in function parameters that only last the lifetime of a single computation.
 
 ## NON-ANONYMOUS LAZY LISTS
 
