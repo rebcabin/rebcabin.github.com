@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Remotable Code | The Light Cone]]></title>
   <link href="http://rebcabin.github.com/blog/categories/remotable-code/atom.xml" rel="self"/>
   <link href="http://rebcabin.github.com/"/>
-  <updated>2012-12-08T21:57:06-08:00</updated>
+  <updated>2012-12-08T22:09:50-08:00</updated>
   <id>http://rebcabin.github.com/</id>
   <author>
     <name><![CDATA[Brian Beckman (rebcabin = brianbec)]]></name>
@@ -329,15 +329,19 @@ s7 = Y[k [Function] n [Function]</p>
 </code></pre>
 
 <p><code>
-Now an otherwise inconceivable computation such as `fib[150]` can be done in a reasonable time.
+Now our regular example is much faster and an otherwise inconceivable computation such as `fib[150]` can be done in a reasonable time.
 </code>
-In[48]:= Block[{$RecursionLimit = 2000}, Timing[value[s7, 150][[1]]]]
-Out[48]= {1.330688, 16130531424904581415797907386349}
+In[48]:= Timing[
+ value[s7, #][[1]] &amp; /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
+Out[48]= {0.068064, {1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 987, 10946}}</p>
+
+<p>In[49]:= Block[{$RecursionLimit = 2000}, Timing[value[s7, 150][[1]]]]
+Out[49]= {1.308640, 16130531424904581415797907386349}
 ```</p>
 
 <h2>CONCLUSION</h2>
 
-<p>Many improvements can be made to this, such as getting rid of the mutable variables in the Module by a monadic bind and refactoring the code for readability. However, we have shown a general technique for creating lazy memoizing lists without introducing names or session state into an evaluator or interpreter.</p>
+<p>Many improvements can be made to this, such as getting rid of the mutable variables in the <code>Module</code> by a monadic bind and refactoring the code for readability. However, we have shown a general technique for creating lazy memoizing lists without introducing names or session state into an evaluator or interpreter.</p>
 ]]></content>
   </entry>
   

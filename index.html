@@ -585,17 +585,25 @@ in the CDF file here: <a href="https://dl.dropbox.com/u/1997638/LazyLambda003.cd
 </span><span class='line'>    ][{1, {_ -&gt; Null}}];</span></code></pre></td></tr></table></div></figure>
 
 
-<p>Now an otherwise inconceivable computation such as <code>fib[150]</code> can be done in a reasonable time.</p>
+<p>Now our regular example is much faster and an otherwise inconceivable computation such as <code>fib[150]</code> can be done in a reasonable time.</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[48]:= Block[{$RecursionLimit = 2000}, Timing[value[s7, 150][[1]]]]
-</span><span class='line'>Out[48]= {1.330688, 16130531424904581415797907386349}</span></code></pre></td></tr></table></div></figure>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[48]:= Timing[
+</span><span class='line'> value[s7, #][[1]] & /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
+</span><span class='line'>Out[48]= {0.068064, {1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 987, 10946}}
+</span><span class='line'>
+</span><span class='line'>In[49]:= Block[{$RecursionLimit = 2000}, Timing[value[s7, 150][[1]]]]
+</span><span class='line'>Out[49]= {1.308640, 16130531424904581415797907386349}</span></code></pre></td></tr></table></div></figure>
 
 
 <h2>CONCLUSION</h2>
 
-<p>Many improvements can be made to this, such as getting rid of the mutable variables in the Module by a monadic bind and refactoring the code for readability. However, we have shown a general technique for creating lazy memoizing lists without introducing names or session state into an evaluator or interpreter.</p>
+<p>Many improvements can be made to this, such as getting rid of the mutable variables in the <code>Module</code> by a monadic bind and refactoring the code for readability. However, we have shown a general technique for creating lazy memoizing lists without introducing names or session state into an evaluator or interpreter.</p>
 </div>
   
   
