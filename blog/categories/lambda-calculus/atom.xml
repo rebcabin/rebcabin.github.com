@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Lambda Calculus | The Light Cone]]></title>
   <link href="http://rebcabin.github.com/blog/categories/lambda-calculus/atom.xml" rel="self"/>
   <link href="http://rebcabin.github.com/"/>
-  <updated>2012-12-08T22:09:50-08:00</updated>
+  <updated>2012-12-09T07:05:43-08:00</updated>
   <id>http://rebcabin.github.com/</id>
   <author>
     <name><![CDATA[Brian Beckman (rebcabin = brianbec)]]></name>
@@ -21,7 +21,7 @@
     <content type="html"><![CDATA[<p>A vastly prettier version of this blog can be found
 in the CDF file here: <a href="https://dl.dropbox.com/u/1997638/LazyLambda003.cdf">https://dl.dropbox.com/u/1997638/LazyLambda003.cdf</a>. Wolfram's free CDF reader is found at <a href="http://www.wolfram.com/cdf-player/">http://www.wolfram.com/cdf-player/</a>.</p>
 
-<p>One reason to care about anonymized computations is that naming things costs memory. Naming things means writing definitions and storing them in tables. A huge advantage of compiled programming languages is that all this name management is done at compile time and there is no run-time cost for it in "release builds" that have names stripped out. Interpreted languages can have some of this cost savings if we can avoid naming things.</p>
+<p>One reason to care about anonymized computations is that naming things costs memory, and it's the kind of memory that lasts from one computation to another -- session memory. Naming things means writing definitions and storing them in tables for access in later computations. Building up big memoization tables as definitions can cost a LOT of memory. We can save this cost if we can avoid naming things, storing information in function parameters that only last the lifetime of a single computation.</p>
 
 <h2>NON-ANONYMOUS LAZY LISTS</h2>
 
