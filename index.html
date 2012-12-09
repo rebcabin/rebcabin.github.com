@@ -482,7 +482,7 @@ in the CDF file here: <a href="https://dl.dropbox.com/u/1997638/LazyLambda003.cd
 
 <p><code>Add</code> converts the dictionary into a hash table by applying the Mathematica built-in <code>Dispatch</code> to it. This is similar to what relational databases do when computing joins &#8211; creates a temporary hash table and uses it. Before adding a new rule to the table, add must check whether the input table is already a hash table since the original list of rules is stored in slot 1 of a hash table. <code>Add</code> can only add a rule to a list of rules, not to a hash table, but <code>add</code> can regenerate a new hash table in linear time. This is a potential hidden quadratic in this code since the hash table will be created over and over again. It does not seem to be a serious problem, here, likely overwhelmed by other overheads.</p>
 
-<p>Now add the code to store computed values in the anonymous object. We must modify the initial input from {1, {}} to {1, {_->Null}} so that the starting dictionary has the default rule.</p>
+<p>Now add the code to store computed values in the anonymous object. We must modify the initial input from <code>{1, {}}</code> to <code>{1, {_-&gt;Null}}</code> so that the starting dictionary has the default rule.</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
