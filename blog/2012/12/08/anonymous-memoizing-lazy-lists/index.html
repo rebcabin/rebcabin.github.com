@@ -5,7 +5,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>The Light Cone</title>
+  <title>Anonymous Memoizing Lazy Lists - The Light Cone</title>
   <meta name="author" content="Brian Beckman (rebcabin = brianbec)">
 
   
@@ -19,7 +19,7 @@ in the CDF file here: https://dl.dropbox.com/u/1997638/LazyLambda003.cdf. Wolfra
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://rebcabin.github.com/">
+  <link rel="canonical" href="http://rebcabin.github.com/blog/2012/12/08/anonymous-memoizing-lazy-lists/">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <script src="/javascripts/modernizr-2.0.js"></script>
@@ -63,15 +63,12 @@ in the CDF file here: https://dl.dropbox.com/u/1997638/LazyLambda003.cdf. Wolfra
 </nav>
   <div id="main">
     <div id="content">
-      <div class="blog-index">
+      <div>
+<article class="hentry" role="article">
   
-  
-  
-    <article>
-      
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2012/12/08/anonymous-memoizing-lazy-lists/">Anonymous Memoizing Lazy Lists</a></h1>
+      <h1 class="entry-title">Anonymous Memoizing Lazy Lists</h1>
     
     
       <p class="meta">
@@ -94,7 +91,7 @@ in the CDF file here: https://dl.dropbox.com/u/1997638/LazyLambda003.cdf. Wolfra
   </header>
 
 
-  <div class="entry-content"><p>A vastly prettier version of this blog can be found
+<div class="entry-content"><p>A vastly prettier version of this blog can be found
 in the CDF file here: <a href="https://dl.dropbox.com/u/1997638/LazyLambda003.cdf">https://dl.dropbox.com/u/1997638/LazyLambda003.cdf</a>. Wolfram&#8217;s free CDF reader is found at <a href="http://www.wolfram.com/cdf-player/">http://www.wolfram.com/cdf-player/</a>.</p>
 
 <p>One reason to care about anonymized computations is that naming things costs memory. Naming things means writing definitions and storing them in tables. A huge advantage of compiled programming languages is that all this name management is done at compile time and there is no run-time cost for it in &#8220;release builds&#8221; that have names stripped out. Interpreted languages can have some of this cost savings if we can avoid naming things.</p>
@@ -597,18 +594,57 @@ in the CDF file here: <a href="https://dl.dropbox.com/u/1997638/LazyLambda003.cd
 
 <p>Many improvements can be made to this, such as getting rid of the mutable variables in the Module by a monadic bind and refactoring the code for readability. However, we have shown a general technique for creating lazy memoizing lists without introducing names or session state into an evaluator or interpreter.</p>
 </div>
+
+
+  <footer>
+    <p class="meta">
+      
   
+
+<span class="byline author vcard">Posted by <span class="fn">Brian Beckman (rebcabin = brianbec)</span></span>
+
+      
+
+
+
+
+
+
+
+
   
 
 
-    </article>
+<time datetime="2012-12-08T20:41:00-08:00" pubdate data-updated="true">Dec 8<span>th</span>, 2012</time>
+      
+
+<span class="categories">
   
-  <div class="pagination">
+    <a class='category' href='/blog/categories/lambda-calculus/'>Lambda Calculus</a>, <a class='category' href='/blog/categories/mathematica/'>Mathematica</a>, <a class='category' href='/blog/categories/remotable-code/'>Remotable Code</a>
+  
+</span>
+
+
+    </p>
     
-    <a href="/blog/archives">Blog Archives</a>
-    
-  </div>
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://rebcabin.github.com/blog/2012/12/08/anonymous-memoizing-lazy-lists/" data-via="lorentzframe" data-counturl="http://rebcabin.github.com/blog/2012/12/08/anonymous-memoizing-lazy-lists/" >Tweet</a>
+  
+  
+  
 </div>
+
+    
+    <p class="meta">
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
 <aside class="sidebar">
   
     <section>
@@ -625,7 +661,7 @@ in the CDF file here: <a href="https://dl.dropbox.com/u/1997638/LazyLambda003.cd
 <section>
   <h1>GitHub Repos</h1>
   <ul id="gh_repos">
-    <li class="loading">Status updating&#8230;</li>
+    <li class="loading">Status updating...</li>
   </ul>
   
   <a href="https://github.com/rebcabin">@rebcabin</a> on GitHub
@@ -655,7 +691,7 @@ in the CDF file here: <a href="https://dl.dropbox.com/u/1997638/LazyLambda003.cd
 <section>
   <h1>Latest Tweets</h1>
   <ul id="tweets">
-    <li class="loading">Status updating&#8230;</li>
+    <li class="loading">Status updating...</li>
   </ul>
   <script type="text/javascript">
     $.domReady(function(){
@@ -674,6 +710,7 @@ in the CDF file here: <a href="https://dl.dropbox.com/u/1997638/LazyLambda003.cd
 
   
 </aside>
+
 
     </div>
   </div>

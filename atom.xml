@@ -1,16 +1,526 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[My Octopress Blog]]></title>
+  <title><![CDATA[The Light Cone]]></title>
   <link href="http://rebcabin.github.com/atom.xml" rel="self"/>
   <link href="http://rebcabin.github.com/"/>
-  <updated>2012-12-08T20:25:10-08:00</updated>
+  <updated>2012-12-08T21:48:09-08:00</updated>
   <id>http://rebcabin.github.com/</id>
   <author>
-    <name><![CDATA[Your Name]]></name>
+    <name><![CDATA[Brian Beckman (rebcabin = brianbec)]]></name>
     
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Anonymous Memoizing Lazy Lists]]></title>
+    <link href="http://rebcabin.github.com/blog/2012/12/08/anonymous-memoizing-lazy-lists/"/>
+    <updated>2012-12-08T20:41:00-08:00</updated>
+    <id>http://rebcabin.github.com/blog/2012/12/08/anonymous-memoizing-lazy-lists</id>
+    <content type="html"><![CDATA[<p>A vastly prettier version of this blog can be found
+in the CDF file here: <a href="https://dl.dropbox.com/u/1997638/LazyLambda003.cdf">https://dl.dropbox.com/u/1997638/LazyLambda003.cdf</a>. Wolfram&#8217;s free CDF reader is found at <a href="http://www.wolfram.com/cdf-player/">http://www.wolfram.com/cdf-player/</a>.</p>
+
+<p>One reason to care about anonymized computations is that naming things costs memory. Naming things means writing definitions and storing them in tables. A huge advantage of compiled programming languages is that all this name management is done at compile time and there is no run-time cost for it in &#8220;release builds&#8221; that have names stripped out. Interpreted languages can have some of this cost savings if we can avoid naming things.</p>
+
+<h2>NON-ANONYMOUS LAZY LISTS</h2>
+
+<p>Lazy lists are a handy way of expressing infinite data streams. A typical lazy list might look like the following:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[1]:= integersFrom[n_] := {n, integersFrom[n + 1] &}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Calling <code>integersFrom</code> with some numerical argument produces a list in curly braces, the first element of which is that numerical argument and the second element of which is a delayed list in the form of a nullary function &#8211; a function of no parameters. That&#8217;s what the <code>&amp;</code> means: &#8220;the expression to my left is a function.&#8221; We&#8217;re doing Lisp-style lists, which are pairs of values and lists.</p>
+
+<p>The list in the second slot of the lazy list won&#8217;t be automatically evaluated &#8211; we must manually invoke the function that produces it when we want the results. That is the essence of lazy computation. Lazy languages like Haskell can decide when you need the results and just sidestep the explicit wrapping in a nullary function and the manual invocation. With eager or strict languages like Mathematica, we must do the invocations manually. But that&#8217;s good, because we can see more clearly what&#8217;s going on.</p>
+
+<p>In our lazy lists, the second item will always be a nullary function.</p>
+
+<p>Start peeling integers off such a structure one at a time. <code>integersFrom[0]</code> will be a lazy list of integers starting from 0, and
+<code>[[1]]</code> will pick the first element from the resulting list:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[2]:= integersFrom[0][[1]]
+</span><span class='line'>Out[2]= 0</span></code></pre></td></tr></table></div></figure>
+
+
+<p>If we pick the second element from <code>integersFrom[0]</code>, that will be a nullary function that produces the next lazy list. Manually invoke the function by appending <code>[]</code> &#8211; invocation brackets containing no arguments &#8211; and then pick off the first element of the result to get the next integer.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[3]:= integersFrom[0][[2]][][[1]]
+</span><span class='line'>Out[3]= 1</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And so on:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[4]:= integersFrom[0][[2]][][[2]][][[1]]
+</span><span class='line'>Out[4]= 2</span></code></pre></td></tr></table></div></figure>
+
+
+<p>A pattern emerges that we can capture in some operators. <code>Value</code> just picks the first element of a lazy list, and <code>next</code> picks the second element &#8211; the nullary function &#8211; and invokes it on no arguments:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[5]:= value[stream_] := stream[[1]];
+</span><span class='line'>next[stream_] := stream[[2]][];
+</span><span class='line'>
+</span><span class='line'>In[7]:= value@integersFrom[0]
+</span><span class='line'>Out[7]= 0
+</span><span class='line'>
+</span><span class='line'>In[8]:= value@next@integersFrom[0]
+</span><span class='line'>Out[8]= 1
+</span><span class='line'>
+</span><span class='line'>In[9]:= value@next@next@integersFrom[0]
+</span><span class='line'>Out[9]= 2</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Improve the <code>value</code> operator so we can ask for the <code>n</code> th value, recursively:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[10]:= ClearAll[value];
+</span><span class='line'>value[stream_, n_: 1] :=
+</span><span class='line'> If[n &lt;= 1,
+</span><span class='line'>  stream[[1]],
+</span><span class='line'>  value[next[stream], n - 1]]
+</span><span class='line'>
+</span><span class='line'>In[12]:= value[integersFrom[1], 26]
+</span><span class='line'>Out[12]= 26</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Let&#8217;s see a few values by mapping over a list of inputs:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[13]:= value[integersFrom[1], #] & /@ {1, 2, 3, 4, 5, 10, 15, 20}
+</span><span class='line'>Out[13]= {1, 2, 3, 4, 5, 10, 15, 20}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We don&#8217;t need <code>next</code> any more &#8211; only <code>value</code> used it. Inline it in the body of <code>value</code>:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[14]:= ClearAll[next, value];
+</span><span class='line'>value[stream_, n_: 1] :=
+</span><span class='line'>  If[n &lt;= 1,
+</span><span class='line'>   stream[[1]],
+</span><span class='line'>   value[stream[[2]][], n - 1]];</span></code></pre></td></tr></table></div></figure>
+
+
+<p>As an aside, an efficient implementation of <code>value</code> requires either the tail-recursion optimization in the interpreter or a re-expression in iterative form, which can be done semi-automatically.</p>
+
+<p>Write another lazy list as follows:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[16]:= ClearAll[fibonaccis];
+</span><span class='line'>fibonaccis[n_] :=
+</span><span class='line'> {If[n &lt;= 1,
+</span><span class='line'>   1,
+</span><span class='line'>   value[fibonaccis[n - 1]] + value[fibonaccis[n - 2]]],
+</span><span class='line'>  fibonaccis[n + 1] &
+</span><span class='line'>  }
+</span><span class='line'>
+</span><span class='line'>In[18]:= Timing[value[fibonaccis[1], 15]]
+</span><span class='line'>Out[18]= {0.024130, 987}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Of course, this is exponentially inefficient, as are all non-memoizing recursive fibonaccis. Fib of 15 is already painful, and fib of 150 is unthinkable. This can be mitigated as follows:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[19]:= ClearAll[fibonaccis];
+</span><span class='line'>fibonaccis[n_] :=
+</span><span class='line'> fibonaccis[n] =
+</span><span class='line'>  {If[n &lt;= 1,
+</span><span class='line'>    1,
+</span><span class='line'>    value[fibonaccis[n - 1]] + value[fibonaccis[n - 2]]],
+</span><span class='line'>   fibonaccis[n + 1] &
+</span><span class='line'>   }
+</span><span class='line'>
+</span><span class='line'>In[21]:= fibonaccis[#] & /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}
+</span><span class='line'>Out[21]= {{1, fibonaccis[1 + 1] &}, {2, fibonaccis[2 + 1] &}, {3, 
+</span><span class='line'>  fibonaccis[3 + 1] &}, {5, fibonaccis[4 + 1] &}, {8, 
+</span><span class='line'>  fibonaccis[5 + 1] &}, {13, fibonaccis[6 + 1] &}, {21, 
+</span><span class='line'>  fibonaccis[7 + 1] &}, {34, fibonaccis[8 + 1] &}, {55, 
+</span><span class='line'>  fibonaccis[9 + 1] &}, {89, fibonaccis[10 + 1] &}, {987, 
+</span><span class='line'>  fibonaccis[15 + 1] &}, {10946, fibonaccis[20 + 1] &}}
+</span><span class='line'>
+</span><span class='line'>In[22]:= Timing[value[fibonaccis[1], 150]]
+</span><span class='line'>Out[22]= {0.001997, 16130531424904581415797907386349}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This is a well-known Mathematica idiom for building a memo table by side effect. The memo table consists of explicit, specific point-values for <code>fibonaccis</code>, which the general <code>fibonaccis</code> &#8211; the one depending on a single parameter <code>n_</code> &#8211; creates on-the-fly. Subsequent references to `fibonaccis&#8220; at known inputs will do a quick lookup on the specific values and avoid the exponential recomputation.</p>
+
+<p>This is non-anonymous programming on steroids &#8211; everything is built up inside the named object <code>fibonaccis</code>, but it gives us great speed at the expense of memory. But this is global memory in Mathematica&#8217;s global brain. When we&#8217;re done with the calculation, we have modified the session state of Mathematica and not left things the way we found them. In some scenarios, this would not be allowed. We must find some other way to evaluate recursive formulas without requiring session state &#8211; using only ephemeral memory such as stack frames that go away when our result is achieved.</p>
+
+<p>Let&#8217;s get rid of the named functions and then even get rid of the named memo table so we can have decent performance on our recursive evaluations.</p>
+
+<h2>ANONYMIZE</h2>
+
+<p>The mother of all anonymizers is the Y combinator:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[23]:= Y = (subjectCode \[Function] (g \[Function] g@g)
+</span><span class='line'>     [precursor \[Function] subjectCode
+</span><span class='line'>       [n \[Function] precursor[precursor][n]]]);</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Without going into how it works, Y is a function that takes another function as an argument. That other function takes an argument <code>k</code> and produces a function of <code>n</code>. The function of <code>n</code> can call <code>k</code> as if <code>k</code> were a recursive definition of the function of <code>n</code>. The function of <code>n</code> can be applied to workhorse arguments, that is, to arguments of the subject code.</p>
+
+<p>In practice, Y is easy to use: just apply it to a function of <code>k</code> that produces a function of <code>n</code> that internally calls <code>k</code>, then apply the result to the desired <code>n</code>.</p>
+
+<p>Here is the lazy list of integers, this time starting at 1, without using the name of the lazy list inside the definition of the lazy list: s1 does not refer to s1:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[24]:= ClearAll[s1];
+</span><span class='line'>s1 = Y[k \[Function] n \[Function]
+</span><span class='line'>      {n, k[n + 1] &}
+</span><span class='line'>    ][1];
+</span><span class='line'>
+</span><span class='line'>In[26]:= value[s1]
+</span><span class='line'>Out[26]= 1</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We feed to Y a function of <code>k</code>. That function of <code>k</code> produces a function of <code>n</code>. That function of <code>n</code> produces a list in curly braces. The first element of that list is the value <code>n</code>, and the second element of that list is a delayed call of <code>k</code> on the next value, <code>n+1</code>. <code>s1</code> is thus a lazy list of all the integers, just defined without reference to any names but parameters. No global storage needed, no session state.</p>
+
+<p>Let&#8217;s map calls of <code>value[s1,#]&amp;</code> over a sequence of inputs to consicely show it off multiple times:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[27]:= value[s1, #] & /@ {1, 2, 3, 4, 26}
+</span><span class='line'>Out[27]= {1, 2, 3, 4, 26}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now, on to an anonymized lazy list of fibonaccis:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[28]:= ClearAll[s2];
+</span><span class='line'>s2 = Y[k \[Function] n \[Function]
+</span><span class='line'>      {If[n &lt;= 1,
+</span><span class='line'>        1,
+</span><span class='line'>        value[k[n - 1]] + value[k[n - 2]]],
+</span><span class='line'>       k[n + 1] &}
+</span><span class='line'>    ][1];</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This one is still slow:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[30]:= Timing[value[s2, #] & /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
+</span><span class='line'>Out[30]= {0.883336, {1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 987, 10946}}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>It takes about a second to produce <code>fib[20]</code>, and higher values become intolerable. We would never get to an absurd input like 150.</p>
+
+<h2>MEMOIZE</h2>
+
+<p>How can we speed it up without defining point values in some named object? By defining point values in an un-named object, of course! Un-named objects are best modeled in Mathematica as lists of rules, one for each point-like input. We&#8217;ll need to pass that around in the argument list of <code>k</code>, and the easiest way to do that is to make <code>n</code>, the argument of <code>k</code>, a regular Mathematica list to contain both a value and an anonymous dictionary.</p>
+
+<p>We&#8217;ll get to this form in a few steps. First, just change <code>n</code> so that it&#8217;s a list rather than an integer. This change spreads a lot of indexing around the body of <code>k</code>, so we want to make sure we get that right before proceeding:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[31]:= ClearAll[s3];
+</span><span class='line'>s3 = Y[k \[Function] n \[Function]
+</span><span class='line'>      {If[n[[1]] &lt;= 1,
+</span><span class='line'>        {1},
+</span><span class='line'>        {value[k[{n[[1]] - 1}]][[1]] +
+</span><span class='line'>          value[k[{n[[1]] - 2}]][[1]]}
+</span><span class='line'>        ],
+</span><span class='line'>       k[{n[[1]] + 1}] &}
+</span><span class='line'>    ][{1}];
+</span><span class='line'>
+</span><span class='line'>In[33]:= Timing[value[s3, #] & /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
+</span><span class='line'>Out[33]= {1.145393, {{1}, {2}, {3}, {5}, {8}, {13}, {21}, {34}, {55}, {89}, {987}, \
+</span><span class='line'>{10946}}}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now add a second element &#8211; an empty list &#8211; to <code>n</code>, but ignore it in the code, just to make sure we get all the shaping correct. We must modify six places where arguments to k are constructed:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[34]:= ClearAll[s4];
+</span><span class='line'>s4 = Y[k \[Function] n \[Function]
+</span><span class='line'>      {If[n[[1]] &lt;= 1,
+</span><span class='line'>        {1, {}},(* 
+</span><span class='line'>        modification 1 *)
+</span><span class='line'>        {value[k[{n[[1]] - 1, {}}]][[1]] + (* 
+</span><span class='line'>          modification 2 *)
+</span><span class='line'>          value[k[{n[[1]] - 2, {}}]][[1]],
+</span><span class='line'>         (* modification 3 *)
+</span><span class='line'>         {}} (* modification 4 *)
+</span><span class='line'>        ],
+</span><span class='line'>       k[{n[[1]] + 1, {}}] &} (* 
+</span><span class='line'>    modification 5 *)
+</span><span class='line'>    ][{1, {}}]; (* modification 6 *)
+</span><span class='line'>
+</span><span class='line'>In[36]:= Timing[value[s4, #] & /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
+</span><span class='line'>Out[36]= {1.214176, {{1, {}}, {2, {}}, {3, {}}, {5, {}}, {8, {}}, {13, {}}, {21, {}}, \
+</span><span class='line'>{34, {}}, {55, {}}, {89, {}}, {987, {}}, {10946, {}}}}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now replace the internal constant empty lists with references to the second slot of <code>n</code>, where we will eventually store the dictionary:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[37]:= ClearAll[s5];
+</span><span class='line'>s5 = Y[k \[Function] n \[Function]
+</span><span class='line'>      {If[n[[1]] &lt;= 1,
+</span><span class='line'>        {1, n[[2]]},
+</span><span class='line'>        {value[k[{n[[1]] - 1, n[[2]]}]][[1]] +
+</span><span class='line'>          value[k[{n[[1]] - 2, n[[2]]}]][[1]],
+</span><span class='line'>         n[[2]]}
+</span><span class='line'>        ],
+</span><span class='line'>       k[{n[[1]] + 1, n[[2]]}] &}
+</span><span class='line'>    ][{1, {}}];
+</span><span class='line'>
+</span><span class='line'>In[39]:= Timing[value[s5, #] & /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
+</span><span class='line'>Out[39]= {1.308497, {{1, {}}, {2, {}}, {3, {}}, {5, {}}, {8, {}}, {13, {}}, {21, {}}, \
+</span><span class='line'>{34, {}}, {55, {}}, {89, {}}, {987, {}}, {10946, {}}}}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We&#8217;re now ready to promote that second part of <code>n</code> into a dictionary &#8211; same as anonymous object, same as list of rules &#8211; for fast lookups. Let&#8217;s take the convention that if a key is not present in the dictionary, we produce <code>Null</code>, and make a few helper functions:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[40]:= ClearAll[lookup, add];
+</span><span class='line'>lookup[dict_, key_] := key /. dict;
+</span><span class='line'>add[dict_, key_, value_] :=
+</span><span class='line'>  With[{trial = lookup[dict, key]},
+</span><span class='line'>   If[trial =!= Null,
+</span><span class='line'>    dict,
+</span><span class='line'>    If[Head[dict] === Dispatch,
+</span><span class='line'>     Dispatch[Prepend[dict[[1]], key -&gt; value]],
+</span><span class='line'>     Dispatch[Prepend[dict, key -&gt; value]]]]];</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>Add</code> converts the dictionary into a hash table by applying the Mathematica built-in <code>Dispatch</code> to it. This is similar to what relational databases do when computing joins &#8211; creates a temporary hash table and uses it. Before adding a new rule to the table, add must check whether the input table is already a hash table since the original list of rules is stored in slot 1 of a hash table. <code>Add</code> can only add a rule to a list of rules, not to a hash table, but <code>add</code> can regenerate a new hash table in linear time. This is a potential hidden quadratic in this code since the hash table will be created over and over again. It does not seem to be a serious problem, here, likely overwhelmed by other overheads.</p>
+
+<p>Now add the code to store computed values in the anonymous object. We must modify the initial input from {1, {}} to {1, {_->Null}} so that the starting dictionary has the default rule.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[43]:= ClearAll[s6];
+</span><span class='line'>s6 = Y[k \[Function] n \[Function]
+</span><span class='line'>      Module[{valToStore, dict = n[[2]]},
+</span><span class='line'>       {If[n[[1]] &lt;= 1,
+</span><span class='line'>         {1, dict},
+</span><span class='line'>         valToStore =
+</span><span class='line'>          value[k[{n[[1]] - 1, dict}]][[1]] +
+</span><span class='line'>           value[k[{n[[1]] - 2, dict}]][[1]];
+</span><span class='line'>         dict = add[dict, n[[1]], valToStore];
+</span><span class='line'>         {valToStore, dict}
+</span><span class='line'>         ],
+</span><span class='line'>        k[{n[[1]] + 1, dict}] &}]
+</span><span class='line'>    ][{1, {_ -&gt; Null}}];
+</span><span class='line'>
+</span><span class='line'>In[45]:= Timing[value[s6, #] & /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
+</span><span class='line'>
+</span><span class='line'>Out[45]= {6.912630,
+</span><span class='line'>{{1,{_-&gt;Null}},
+</span><span class='line'>{2,{2-&gt;2,_-&gt;Null}},
+</span><span class='line'>{3,{3-&gt;3,2-&gt;2,_-&gt;Null}},
+</span><span class='line'>{5,{4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null}},
+</span><span class='line'>{8,Dispatch[{5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
+</span><span class='line'>{13,Dispatch[{6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
+</span><span class='line'>{21,Dispatch[{7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
+</span><span class='line'>{34,Dispatch[{8-&gt;34,7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
+</span><span class='line'>{55,Dispatch[{9-&gt;55,8-&gt;34,7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
+</span><span class='line'>{89,Dispatch[{10-&gt;89,9-&gt;55,8-&gt;34,7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
+</span><span class='line'>{987,Dispatch[{15-&gt;987,14-&gt;610,13-&gt;377,12-&gt;233,11-&gt;144,10-&gt;89,9-&gt;55,8-&gt;34,7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
+</span><span class='line'>{10946,Dispatch[{20-&gt;10946,19-&gt;6765,18-&gt;4181,17-&gt;2584,16-&gt;1597,15-&gt;987,14-&gt;610,13-&gt;377,12-&gt;233,11-&gt;144,10-&gt;89,9-&gt;55,8-&gt;34,7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]}}}
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now add code to do lookups</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[46]:= ClearAll[s7];
+</span><span class='line'>s7 = Y[k \[Function] n \[Function]
+</span><span class='line'>      Module[{valToStore, dict = n[[2]]},
+</span><span class='line'>       {If[n[[1]] &lt;= 1,
+</span><span class='line'>         {1, dict},
+</span><span class='line'>         valToStore =
+</span><span class='line'>          With[{
+</span><span class='line'>            v1 = lookup[dict, n[[1]] - 1],
+</span><span class='line'>            v2 = lookup[dict, n[[2]] - 2]},
+</span><span class='line'>           If[v1 =!= Null, v1,
+</span><span class='line'>             value[k[{n[[1]] - 1, dict}]][[1]]] +
+</span><span class='line'>            If[v2 =!= Null, v2,
+</span><span class='line'>             value[k[{n[[1]] - 2, dict}]][[1]]]];
+</span><span class='line'>         dict = add[dict, n[[1]], valToStore];
+</span><span class='line'>         {valToStore, dict}
+</span><span class='line'>         ],
+</span><span class='line'>        k[{n[[1]] + 1, dict}] &}]
+</span><span class='line'>    ][{1, {_ -&gt; Null}}];</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now an otherwise inconceivable computation such as <code>fib[150]</code> can be done in a reasonable time.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>In[48]:= Block[{$RecursionLimit = 2000}, Timing[value[s7, 150][[1]]]]
+</span><span class='line'>Out[48]= {1.330688, 16130531424904581415797907386349}</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>CONCLUSION</h2>
+
+<p>Many improvements can be made to this, such as getting rid of the mutable variables in the Module by a monadic bind and refactoring the code for readability. However, we have shown a general technique for creating lazy memoizing lists without introducing names or session state into an evaluator or interpreter.</p>
+]]></content>
+  </entry>
   
 </feed>
