@@ -5,7 +5,8 @@ date: 2012-12-08 20:41
 comments: true
 categories: [Mathematica, Lambda Calculus, Remotable Code]
 ---
-A vastly prettier version of this blog can be found in the CDF file here: [https://dl.dropbox.com/u/1997638/LazyLambda003.cdf](https://dl.dropbox.com/u/1997638/LazyLambda003.cdf). Wolfram's free CDF reader is found at [http://www.wolfram.com/cdf-player/](http://www.wolfram.com/cdf-player/).
+A vastly prettier version of this blog can be found 
+in the CDF file here: [https://dl.dropbox.com/u/1997638/LazyLambda003.cdf](https://dl.dropbox.com/u/1997638/LazyLambda003.cdf). Wolfram's free CDF reader is found at [http://www.wolfram.com/cdf-player/](http://www.wolfram.com/cdf-player/).
 
 One reason to care about anonymized computations is that naming things costs memory. Naming things means writing definitions and storing them in tables. A huge advantage of compiled programming languages is that all this name management is done at compile time and there is no run-time cost for it in "release builds" that have names stripped out. Interpreted languages can have some of this cost savings if we can avoid naming things.
 
@@ -236,7 +237,7 @@ add[dict_, key_, value_] :=
 ```
 `Add` converts the dictionary into a hash table by applying the Mathematica built-in `Dispatch` to it. This is similar to what relational databases do when computing joins -- creates a temporary hash table and uses it. Before adding a new rule to the table, add must check whether the input table is already a hash table since the original list of rules is stored in slot 1 of a hash table. `Add` can only add a rule to a list of rules, not to a hash table, but `add` can regenerate a new hash table in linear time. This is a potential hidden quadratic in this code since the hash table will be created over and over again. It does not seem to be a serious problem, here, likely overwhelmed by other overheads.
 
-Now add the code to store computed values in the anonymous object. We must modify the initial input from {1, {}} to {1, {_->Null}} so that the starting dictionary has the default rule.
+Now add the code to store computed values in the anonymous object. We must modify the initial input from `{1, {}}` to `{1, {_->Null}}` so that the starting dictionary has the default rule.
 ```
 In[43]:= ClearAll[s6];
 s6 = Y[k \[Function] n \[Function]
