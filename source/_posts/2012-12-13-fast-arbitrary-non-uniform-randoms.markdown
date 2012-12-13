@@ -6,7 +6,7 @@ date: 2012-12-13 08:28
 comments: true
 categories: [Randoms, PseudoRandoms, Algorithms, Pseudo Random Number Generation, Random Number Generation]
 ---
-You give me an array of integers representing the distribution of outcomes of some discrete random process (translation: you give me the specification of a loaded die: "I want 1 to come up 7/39 of the time; 2 to come up 5/39 of the time; I'd better NEVER see a 3 'cause I'm betting the farm on that; 4 to come up 11/39 of the time; 5 to come up 3/39 of the time; and 6 to come up 13/39 of the time."). You also give me a uniform pseudo-random number generator (PRNG) like Mathematica's[Random Integer](http://reference.wolfram.com/mathematica/ref/RandomInteger.html?q=RandomInteger&lang=en). I give you back a new PRNG that honors the distribution you gave me, in the sense that, statistically, it generates outcomes with the same distribution as you gave me.
+You give me an array of integers representing the distribution of outcomes of some discrete random process (translation: you give me the specification of a loaded die: "I want 1 to come up 7/39 of the time; 2 to come up 5/39 of the time; I'd better NEVER see a 3 'cause I'm betting the farm on that; 4 to come up 11/39 of the time; 5 to come up 3/39 of the time; and 6 to come up 13/39 of the time."). You also give me a uniform pseudo-random number generator (PRNG) like Mathematica's [Random Integer](http://reference.wolfram.com/mathematica/ref/RandomInteger.html?q=RandomInteger&lang=en). I give you back a new PRNG that honors the distribution you gave me, in the sense that, statistically, it generates outcomes with the same distribution as you gave me.
 
 The problem is a practical, real-world problem. Any time you need to generate random numbers according to some arbitrary, given distribution such as in simulation, traversing a Bayesian network, a decision tree, a packet retry backoff schedule, you name it, the problem comes up. In my work, it comes up every time I need to generate random expressions for testing parsers or for Monte-Carlo search for formulas. Most of the time, you want to generate expressions non-uniformly. For instance, you'd like to generate addition expressions more frequently than division expressions or function calls more frequently than function definitions. 
 
@@ -17,7 +17,7 @@ There are a lot of solutions to this problem. Probability mavens will immediatel
 * by constructing an explicit inverse in an array -- O(S) space, O(1) time, where S is the sum of the numbers in the array -- the total number of trials imputed in the original distribution -- 39 in our example 
 * by my favorite method: [Walker's method of aliases](http://code.activestate.com/recipes/576564-walkers-alias-method-for-random-objects-with-diffe/) -- O(N) space and O(1) time.
 
-At first glance, this seems ridiculous, but there is a way. In a nutshell: paint a dartboard with colors in the given proportions, throw darts, lookup the colors.
+At first glance, this seems ridiculous, but there is a way. In a nutshell: paint a dartboard with colors in the given proportions, throw darts, lookup the colors (thanks to Terence Spies for this beautiful idea).
 
 Less metaphorically: imagine that the counts are colored balls distributed in bins:
 
