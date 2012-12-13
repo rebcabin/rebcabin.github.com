@@ -4,7 +4,7 @@
   <title><![CDATA[The Light Cone]]></title>
   <link href="http://rebcabin.github.com/atom.xml" rel="self"/>
   <link href="http://rebcabin.github.com/"/>
-  <updated>2012-12-13T14:37:29-08:00</updated>
+  <updated>2012-12-13T14:41:07-08:00</updated>
   <id>http://rebcabin.github.com/</id>
   <author>
     <name><![CDATA[Brian Beckman (rebcabin = brianbec)]]></name>
@@ -18,34 +18,11 @@
     <link href="http://rebcabin.github.com/blog/2012/12/13/fast-arbitrary-non-uniform-randoms/"/>
     <updated>2012-12-13T08:28:00-08:00</updated>
     <id>http://rebcabin.github.com/blog/2012/12/13/fast-arbitrary-non-uniform-randoms</id>
-    <content type="html"><![CDATA[<p>You give me an array of integers representing the distribution of
-outcomes of some discrete random process (translation: you give me the
-specification of a loaded die: &#8220;I want 1 to come up 7/39 of the time;
-2 to come up 5/39 of the time; I&#8217;d better NEVER see a 3 &#8216;cause I&#8217;m
-betting the farm on that; 4 to come up 11/39 of the time; 5 to come up
-3/39 of the time; and 6 to come up 13/39 of the time.&#8221;).  You also
-give me a uniform pseudo-random number generator (PRNG) like
-Mathematica&#8217;s <a href="http://reference.wolfram.com/mathematica/ref/RandomInteger.html?q=RandomInteger&amp;lang=en">Random
-Integer</a>.
-I give you back a new PRNG that honors the distribution you gave me,
-in the sense that, statistically, it generates outcomes with the same
-distribution as you gave me.</p>
+    <content type="html"><![CDATA[<p>You give me an array of integers representing the distribution of outcomes of some discrete random process (translation: you give me the specification of a loaded die: &#8220;I want 1 to come up 7/39 of the time; 2 to come up 5/39 of the time; I&#8217;d better NEVER see a 3 &#8216;cause I&#8217;m betting the farm on that; 4 to come up 11/39 of the time; 5 to come up 3/39 of the time; and 6 to come up 13/39 of the time.&#8221;).  You also give me a uniform pseudo-random number generator (PRNG) like Mathematica&#8217;s <a href="http://reference.wolfram.com/mathematica/ref/RandomInteger.html?q=RandomInteger&amp;lang=en">Random Integer</a>.  I give you back a new PRNG that honors the distribution you gave me, in the sense that, statistically, it generates outcomes with the same distribution as you gave me.</p>
 
-<p>The problem is a practical, real-world problem.  Any time you need to
-generate random numbers according to some arbitrary, given
-distribution such as in simulation, traversing a Bayesian network, a
-decision tree, a packet retry backoff schedule, you name it, the
-problem comes up.  In my work, it comes up every time I need to
-generate random expressions for testing parsers or for Monte-Carlo
-search for formulas.  Most of the time, you want to generate
-expressions non-uniformly.  For instance, you&#8217;d like to generate
-addition expressions more frequently than division expressions or
-function calls more frequently than function definitions.</p>
+<p>The problem is a practical, real-world problem.  Any time you need to generate random numbers according to some arbitrary, given distribution such as in simulation, traversing a Bayesian network, a decision tree, a packet retry backoff schedule, you name it, the problem comes up.  In my work, it comes up every time I need to generate random expressions for testing parsers or for Monte-Carlo search for formulas.  Most of the time, you want to generate expressions non-uniformly.  For instance, you&#8217;d like to generate addition expressions more frequently than division expressions or function calls more frequently than function definitions.</p>
 
-<p>There are a lot of solutions to this problem.  Probability mavens will
-immediately see that the problem boils down to <a href="http://en.wikipedia.org/wiki/Inverse_transform_sampling">inverting the
-CDF</a>.  We can
-do this by:</p>
+<p>There are a lot of solutions to this problem.  Probability mavens will immediately see that the problem boils down to <a href="http://en.wikipedia.org/wiki/Inverse_transform_sampling">inverting the CDF</a>.  We can do this by:</p>
 
 <ul>
 <li>linear search &#8211; O(N) space, O(N) time, where N is the number of different outcomes &#8211; the number of elements in the original array &#8211; the number of sides on the loaded die &#8211; 6 in our example</li>
@@ -55,10 +32,7 @@ do this by:</p>
 </ul>
 
 
-<p>At first glance, this seems ridiculous, but there is a way.  In a
-nutshell: paint a dartboard with colors in the given proportions,
-throw darts, lookup the colors (thanks to Terence Spies for this
-beautiful idea).</p>
+<p>At first glance, this seems ridiculous, but there is a way.  In a nutshell: paint a dartboard with colors in the given proportions, throw darts, lookup the colors (thanks to Terence Spies for this beautiful idea).</p>
 
 <p>Less metaphorically: imagine that the counts are colored balls distributed in bins:</p>
 
@@ -72,8 +46,7 @@ beautiful idea).</p>
 </ol>
 
 
-<p>Scale up the given counts of balls until the total is divisible by N
-&#8211; multiply every count by D/S where D=lcm(N,S)=lcm(6,39)=78: D/S=2</p>
+<p>Scale up the given counts of balls until the total is divisible by N &#8211; multiply every count by D/S where D=lcm(N,S)=lcm(6,39)=78: D/S=2</p>
 
 <p>Now we have</p>
 
@@ -87,9 +60,7 @@ beautiful idea).</p>
 </ol>
 
 
-<p>Redistribute the counts amongst the bins so that every bin contains
-the same number of counts, namely D/N=13, and that the following
-conditions obtain:</p>
+<p>Redistribute the counts amongst the bins so that every bin contains the same number of counts, namely D/N=13, and that the following conditions obtain:</p>
 
 <ul>
 <li>every new bin contains at most 2 colors</li>
@@ -97,13 +68,9 @@ conditions obtain:</p>
 </ul>
 
 
-<p>There is a very elegant algorithm for this redistribution process.
-It&#8217;s a one-liner whose statement is a proof of its correctness.  Think
-a minute, if you like, to see if you can come up with it, but here it
-is:</p>
+<p>There is a very elegant algorithm for this redistribution process.  It&#8217;s a one-liner whose statement is a proof of its correctness.  Think a minute, if you like, to see if you can come up with it, but here it is:</p>
 
-<p>Fill up the shortest bin from the tallest bin; remove the new filled
-bin from the game and continue.</p>
+<p>Fill up the shortest bin from the tallest bin; remove the new filled bin from the game and continue.</p>
 
 <p>Do this procedure on a piece of paper:</p>
 
@@ -128,15 +95,9 @@ bin from the game and continue.</p>
 </ol>
 
 
-<p>Now, to generate new randoms, roll once to choose a bin
-<code>RandomInteger[{1,N}]</code>, and roll again to choose a height
-<code>RandomInteger[{1,D/N}]</code>.  If the randomly chosen height is less than
-or equal to the number of balls of the home color, return the number
-of the home color; otherwise, return the number of the foreign color.</p>
+<p>Now, to generate new randoms, roll once to choose a bin <code>RandomInteger[{1,N}]</code>, and roll again to choose a height <code>RandomInteger[{1,D/N}]</code>.  If the randomly chosen height is less than or equal to the number of balls of the home color, return the number of the home color; otherwise, return the number of the foreign color.</p>
 
-<p>Nifty, eh?  Here is a Mathematica notebook with an implementation
-tuned for clarity:
-<a href="https://dl.dropbox.com/u/1997638/FastNonUniformPseudoRandoms.cdf">https://dl.dropbox.com/u/1997638/FastNonUniformPseudoRandoms.cdf</a></p>
+<p>Nifty, eh?  Here is a Mathematica notebook with an implementation tuned for clarity: <a href="https://dl.dropbox.com/u/1997638/FastNonUniformPseudoRandoms.cdf">https://dl.dropbox.com/u/1997638/FastNonUniformPseudoRandoms.cdf</a></p>
 ]]></content>
   </entry>
   
