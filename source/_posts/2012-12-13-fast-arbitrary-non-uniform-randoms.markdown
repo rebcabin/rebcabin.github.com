@@ -68,7 +68,7 @@ Now we have
 
 Redistribute the counts amongst the bins so that every bin contains
 the same number of counts, namely D/N=13, and that the following
-condions obtain:
+conditions obtain:
 
 * every new bin contains at most 2 colors
 * you never take ALL the balls out of any bin -- every bin contains at least one ball of its original color if it had any
