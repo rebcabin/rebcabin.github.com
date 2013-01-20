@@ -4,7 +4,7 @@
   <title><![CDATA[The Light Cone]]></title>
   <link href="http://rebcabin.github.com/atom.xml" rel="self"/>
   <link href="http://rebcabin.github.com/"/>
-  <updated>2012-12-13T14:41:07-08:00</updated>
+  <updated>2013-01-20T10:42:45-08:00</updated>
   <id>http://rebcabin.github.com/</id>
   <author>
     <name><![CDATA[Brian Beckman (rebcabin = brianbec)]]></name>
@@ -12,6 +12,375 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Asynchronous Lazy Lists]]></title>
+    <link href="http://rebcabin.github.com/blog/2013/01/19/asynchronous-lazy-lists/"/>
+    <updated>2013-01-19T22:03:00-08:00</updated>
+    <id>http://rebcabin.github.com/blog/2013/01/19/asynchronous-lazy-lists</id>
+    <content type="html"><![CDATA[<h2>SYNCHRONOUS LAZY LISTS</h2>
+
+<p>Lazy lists make it easy to write infinite data sets without doing infinite computations. For instance, the following static method in C# will generate a lazy list that serves up all the integers (actually, all the 32-bit integers in an infinite cycle, but we quibble):</p>
+
+<figure class='code'><figcaption><span>A lazy list for an infinite stream of ints</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="n">LazyList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span> <span class="n">integers</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="k">new</span> <span class="n">LazyList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span> <span class="p">{</span><span class="k">value</span> <span class="p">=</span> <span class="n">n</span><span class="p">,</span> <span class="n">rest</span> <span class="p">=</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">integers</span><span class="p">(</span><span class="n">n</span> <span class="p">+</span> <span class="m">1</span><span class="p">)};</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Notice that an instance of this <code>LazyList</code> type has two properties (or fields, if you prefer): a <code>value</code> and a <code>rest</code>, which is a function, (lambda expression) that, when invoked, will produce the rest of the infinite stream. That&#8217;s the essence of the technique: keep the infinite stuff in a function, recursively, and pick out values only when you need them.</p>
+
+<p>Next is my implementation of the <code>LazyList</code> class.  Of course, I could use <a href="http://msdn.microsoft.com/en-us/library/dd642331.aspx">C#&#8217;s built-in <code>Lazy</code> type</a>, but I am, on purpose, doing the details myself for deeper understanding and exploration. We&#8217;re going to morph these into task-based LazyLists that produce the downstream values asynchronously:</p>
+
+<figure class='code'><figcaption><span>Implementation of the LazyList class</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">class</span> <span class="nc">LazyList</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="n">T</span> <span class="k">value</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">public</span> <span class="n">Func</span><span class="p">&lt;</span><span class="n">LazyList</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;&gt;</span> <span class="n">rest</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="n">T</span> <span class="nf">nth</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span>
+</span><span class='line'>            <span class="p">(</span><span class="n">n</span> <span class="p">&lt;=</span> <span class="m">1</span><span class="p">)</span> <span class="p">?</span>
+</span><span class='line'>            <span class="k">value</span> <span class="p">:</span>
+</span><span class='line'>            <span class="n">rest</span><span class="p">().</span><span class="n">nth</span><span class="p">(</span><span class="n">n</span> <span class="p">-</span> <span class="m">1</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>In addition to the properties already mentioned, I&#8217;ve included an <code>nth</code> method that walks up the lazy list in O(n) time to get the <code>n</code>-th item (without the <a href="http://stackoverflow.com/questions/7102520/does-c-sharp-do-tail-recursion">tail-recursion optimization</a>, this code will also consume O(n) space on the stack).  This is not designed to fetch the <code>n</code>-th item directly, as is possible with some <a href="http://en.wikipedia.org/wiki/Spigot_algorithm">spigot algorithms</a>, and it might be very interesting to explore spigots using lazy techniques in C#, but perhaps another time.</p>
+
+<p>Next is a little more meat on the bones: the obligatory factorial:</p>
+
+<figure class='code'><figcaption><span>A LazyList that produces factorials</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="n">LazyList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span> <span class="n">factorials</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="k">new</span> <span class="n">LazyList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">value</span> <span class="p">=</span> <span class="p">(</span><span class="n">n</span> <span class="p">&lt;=</span> <span class="m">1</span><span class="p">)</span> <span class="p">?</span> <span class="m">1</span> <span class="p">:</span> <span class="n">n</span> <span class="p">*</span> <span class="n">factorials</span><span class="p">(</span><span class="n">n</span> <span class="p">-</span> <span class="m">1</span><span class="p">).</span><span class="k">value</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">rest</span> <span class="p">=</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">factorials</span><span class="p">(</span><span class="n">n</span> <span class="p">+</span> <span class="m">1</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">};</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This one uses recursion in the production of <code>value</code>.  There are two uses of recursion: <code>value</code> recursively uses prior values, <code>rest</code> recursively produces future values. This is pretty neat. Both uses of recursion are completely synchronous and all this code runs on one thread.</p>
+
+<p>We could go on to fibonaccis and more exotic streams; we could anonymize these for remoting, memoize them for efficiency, as explained <a href="http://rebcabin.github.com/blog/2012/12/08/anonymous-memoizing-lazy-lists/">an earlier post on this blog</a>; but that&#8217;s not where we&#8217;re going today.</p>
+
+<p>One last thing before going <code>async</code>, and thats for a bit of code that exercises the above, using <a href="http://www.linqpad.net">LinqPad</a>:</p>
+
+<figure class='code'><figcaption><span>Exercising the LazyLists</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">void</span> <span class="nf">Main</span><span class="p">()</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">var</span> <span class="n">k1</span> <span class="p">=</span> <span class="n">integers</span><span class="p">(</span><span class="m">1</span><span class="p">);</span>
+</span><span class='line'>    <span class="c1">// Expect 5</span>
+</span><span class='line'>    <span class="n">k1</span><span class="p">.</span><span class="n">nth</span><span class="p">(</span><span class="m">5</span><span class="p">).</span><span class="n">Dump</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kt">var</span> <span class="n">k2</span> <span class="p">=</span> <span class="n">factorials</span><span class="p">(</span><span class="m">1</span><span class="p">);</span>
+</span><span class='line'>    <span class="c1">// Expect 120</span>
+</span><span class='line'>    <span class="n">k2</span><span class="p">.</span><span class="n">nth</span><span class="p">(</span><span class="m">5</span><span class="p">).</span><span class="n">Dump</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// A hint for what&#39;s coming up next</span>
+</span><span class='line'>    <span class="n">AsyncMain</span><span class="p">();</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Much more with synchronous lazy streams can be found in this wonderful paper:
+<a href="http://www.cs.dartmouth.edu/~doug/music.ps.gz">Music of the Streams by Doug McIlroy</a>. But on to asynchrony for us.</p>
+
+<h2>ASYNCHRONOUS LAZY LISTS WITH TASK</h2>
+
+<p>Let&#8217;s start with &#8216;what-we-want&#8217; in AsyncMain:</p>
+
+<figure class='code'><figcaption><span>AsyncMain</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="k">async</span> <span class="k">void</span> <span class="nf">AsyncMain</span><span class="p">()</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;Async main, k3: &quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="kt">var</span> <span class="n">k3</span> <span class="p">=</span> <span class="n">asyncIntegers</span><span class="p">(</span><span class="m">1</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">(</span><span class="k">await</span> <span class="n">k3</span><span class="p">.</span><span class="n">nth</span><span class="p">(</span><span class="m">5</span><span class="p">)).</span><span class="n">Dump</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;Async main, k4: &quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="kt">var</span> <span class="n">k4</span> <span class="p">=</span> <span class="n">asyncFactorials</span><span class="p">(</span><span class="m">1</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">(</span><span class="k">await</span> <span class="n">k4</span><span class="p">.</span><span class="n">nth</span><span class="p">(</span><span class="m">5</span><span class="p">)).</span><span class="n">Dump</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kt">var</span> <span class="n">z0</span> <span class="p">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">Task</span><span class="p">.</span><span class="n">Run</span><span class="p">(()</span> <span class="p">=&gt;</span>
+</span><span class='line'>    <span class="p">{</span>   <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;Anonymous task: &quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="n">Thread</span><span class="p">.</span><span class="n">Sleep</span><span class="p">(</span><span class="n">ran</span><span class="p">.</span><span class="n">Next</span><span class="p">(</span><span class="m">200</span><span class="p">));</span>
+</span><span class='line'>        <span class="k">return</span> <span class="m">42</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}));</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;Async main, z0: &quot;</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We made a new main because <a href="http://msdn.microsoft.com/en-us/library/vstudio/hh156513.aspx">we needed it to be <code>async</code></a> and we can&#8217;t mark the regular <code>Main</code> as <code>async</code>.  What we want, here, is to <code>await</code> the computation of <code>asyncIntegers</code> and <code>asyncFactorials</code> in the body of <code>AsyncMain</code>.  This can cause various threads to jump around in our code, so we&#8217;re careful to print thread id&#8217;s after every <code>await</code> and in the body of every lambda expression that runs asynchronously in
+a task, via the following static method:</p>
+
+<figure class='code'><figcaption><span>How to dump a thread id</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="k">void</span> <span class="nf">DumpThreadId</span><span class="p">(</span><span class="kt">string</span> <span class="n">msg</span> <span class="p">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>   <span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Thread</span><span class="p">.</span><span class="n">CurrentThread</span><span class="p">.</span><span class="n">ManagedThreadId</span><span class="p">.</span><span class="n">Dump</span><span class="p">(</span><span class="n">msg</span> <span class="p">+</span> <span class="s">&quot;Thread Id&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We&#8217;ll also insert a number of artificial random delays to try to entice the thread scheduler to send different threads through our code.  None of these <code>Sleeps</code> are part of the algorithm at all; they&#8217;re here to induce interesting behavior.</p>
+
+<p>Now look at the implementation of <code>asyncIntegers</code>:</p>
+
+<figure class='code'><figcaption><span>asyncIntegers</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="n">AsyncList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span> <span class="n">asyncIntegers</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>   <span class="k">return</span> <span class="k">new</span> <span class="n">AsyncList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span>
+</span><span class='line'>    <span class="p">{</span>   <span class="k">value</span> <span class="p">=</span> <span class="n">n</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">rest</span> <span class="p">=</span> <span class="p">()</span> <span class="p">=&gt;</span>
+</span><span class='line'>        <span class="p">{</span>   <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;AsyncIntegers, rest: &quot;</span><span class="p">);</span>
+</span><span class='line'>            <span class="n">Thread</span><span class="p">.</span><span class="n">Sleep</span><span class="p">(</span><span class="n">ran</span><span class="p">.</span><span class="n">Next</span><span class="p">(</span><span class="m">200</span><span class="p">));</span>
+</span><span class='line'>            <span class="k">return</span> <span class="nf">asyncIntegers</span><span class="p">(</span><span class="n">n</span> <span class="p">+</span> <span class="m">1</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">};</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Looks just like the implementation of lazy integers.  The variable <code>k3 = asyncIntegers(5)</code> in <code>AsyncMain</code> must be of type <code>AsyncList</code>.   The deeper differences are in <code>nth</code>, the method we use to walk the lazy list:</p>
+
+<figure class='code'><figcaption><span>AsyncList</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">class</span> <span class="nc">AsyncList</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span>
+</span><span class='line'><span class="p">{</span>   <span class="k">public</span> <span class="n">T</span> <span class="k">value</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">public</span> <span class="n">Func</span><span class="p">&lt;</span><span class="n">AsyncList</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;&gt;</span> <span class="n">rest</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">async</span> <span class="n">Task</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span> <span class="n">nth</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>   <span class="k">return</span>
+</span><span class='line'>            <span class="p">(</span><span class="n">n</span> <span class="p">&lt;=</span> <span class="m">1</span><span class="p">)</span> <span class="p">?</span>
+</span><span class='line'>            <span class="k">await</span> <span class="p">(</span><span class="n">Task</span><span class="p">.</span><span class="n">Run</span><span class="p">(()</span> <span class="p">=&gt;</span>
+</span><span class='line'>            <span class="p">{</span>   <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;AsyncList, nth: &quot;</span><span class="p">);</span>
+</span><span class='line'>                <span class="k">return</span> <span class="k">value</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">}))</span> <span class="p">:</span>
+</span><span class='line'>            <span class="k">await</span> <span class="p">((</span><span class="k">await</span> <span class="n">Task</span><span class="p">.</span><span class="n">Run</span><span class="p">(()</span> <span class="p">=&gt;</span>
+</span><span class='line'>            <span class="p">{</span>   <span class="n">Thread</span><span class="p">.</span><span class="n">Sleep</span><span class="p">(</span><span class="n">ran</span><span class="p">.</span><span class="n">Next</span><span class="p">(</span><span class="m">200</span><span class="p">));</span>
+</span><span class='line'>                <span class="k">return</span> <span class="nf">rest</span><span class="p">();</span>
+</span><span class='line'>            <span class="p">})).</span><span class="n">nth</span><span class="p">(</span><span class="n">n</span> <span class="p">-</span> <span class="m">1</span><span class="p">));</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We use only one facet of <a href="http://msdn.microsoft.com/en-us/library/vstudio/dd321424.aspx">the multifaceted <code>Task</code> class</a>. The rule we use is that <code>Task.Run</code>, when given a <code>Func&lt;T&gt;</code>, produces a <code>Task&lt;T&gt;</code>. Awaiting a <code>Task&lt;T&gt;</code> prduces a <code>T</code>.  So, except for the routing through <code>Task</code>, it looks like invoking a <code>Func&lt;T&gt;</code> to produce a <code>T</code>. This seems like a minimal intrusion of task-ness on our original lazy-list design.</p>
+
+<p>Look at the first branch of <code>nth</code>, when <code>n &lt;= 1</code>. We <code>await</code> a <code>Task.Run</code> of a <code>Func&lt;T&gt;</code> that produces <code>value</code>, so the result of the <code>await</code> is of type <code>T</code>, the type of <code>value</code>.  This <code>T</code> gets returned through an <code>async</code> method, namely <code>nth</code>, so it gets converted back into a <code>Task&lt;T&gt;</code> on the way out.  In the body of <code>AsyncMain</code>, where we are calling <code>nth</code>, we <code>await</code> this <code>Task&lt;T&gt;</code>, getting back a <code>T</code> in the end.</p>
+
+<p><code>T</code>&#8217;s become <code>Task&lt;T&gt;</code> when run under <code>Task.Run</code> or when returned from any <code>async</code> method that would otherwise produce a <code>T</code>.  <code>Task&lt;T&gt;</code>&#8217;s become <code>T</code>&#8217;s when <code>awaited</code> (there&#8217;s a monad in here somewhere, but that&#8217;s for another time, too).</p>
+
+<p>On the other branch of <code>nth</code>, The new <code>rest</code> will walk up the lazy list just as before, only awaiting two values. The innermost lambda expression produces an <code>AsyncList</code>, so its <code>Task.Run</code> produces a <code>Task&lt;AsyncList&gt;</code>. Let&#8217;s <code>Await</code> that to get the recursive <code>AsyncList</code>, just as before with <code>LazyList</code>. Now dot-in the recursive call to <code>nth(n-1)</code>, producing a <code>Task&lt;T&gt;</code>; <code>await</code> that to get a <code>T</code>; and return it through the <code>async</code> to get a <code>Task&lt;T&gt;</code> on the way out.</p>
+
+<p>On both branches, <code>nth</code> is of type <code>Task&lt;T&gt;</code>, just what we need to <code>await</code> on in the caller to get <code>T</code>&#8217;s.</p>
+
+<p>Here is the more meaty async factorial, which doesn&#8217;t differ in any interesting way from the lazy-list factorial:</p>
+
+<figure class='code'><figcaption><span>asyncFactorial</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="n">AsyncList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span> <span class="n">asyncFactorials</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>   <span class="k">return</span> <span class="k">new</span> <span class="n">AsyncList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span>
+</span><span class='line'>    <span class="p">{</span>   <span class="k">value</span> <span class="p">=</span> <span class="p">(</span><span class="n">n</span> <span class="p">&lt;=</span> <span class="m">1</span><span class="p">)</span> <span class="p">?</span> <span class="m">1</span> <span class="p">:</span> <span class="n">n</span> <span class="p">*</span> <span class="n">asyncFactorials</span><span class="p">(</span><span class="n">n</span> <span class="p">-</span> <span class="m">1</span><span class="p">).</span><span class="k">value</span><span class="p">,</span>
+</span><span class='line'>        <span class="n">rest</span> <span class="p">=</span> <span class="p">()</span> <span class="p">=&gt;</span>
+</span><span class='line'>        <span class="p">{</span>   <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;AsyncFactorials, rest: &quot;</span><span class="p">);</span>
+</span><span class='line'>            <span class="n">Thread</span><span class="p">.</span><span class="n">Sleep</span><span class="p">(</span><span class="n">ran</span><span class="p">.</span><span class="n">Next</span><span class="p">(</span><span class="m">200</span><span class="p">));</span>
+</span><span class='line'>            <span class="k">return</span> <span class="nf">asyncFactorials</span><span class="p">(</span><span class="n">n</span> <span class="p">+</span> <span class="m">1</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">};</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>It may take a few tries to get a lot of thread variety: the thread-pool scheduler seems to have hints from your code and tries to reuse the same thread whenever it can.  But eventually, you can get a trace like the following that shows various thread moving around these tasks.</p>
+
+<figure class='code'><figcaption><span>asyncFactorial</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="m">5</span>
+</span><span class='line'><span class="m">120</span>
+</span><span class='line'><span class="n">Async</span> <span class="n">main</span><span class="p">,</span> <span class="n">k3</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class='line'><span class="m">16</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">AsyncIntegers</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class='line'><span class="m">22</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">AsyncIntegers</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class='line'><span class="m">37</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">AsyncIntegers</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class='line'><span class="m">37</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">AsyncIntegers</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class='line'><span class="m">37</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">AsyncList</span><span class="p">,</span> <span class="n">nth</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class='line'><span class="m">37</span>
+</span><span class='line'>
+</span><span class='line'><span class="m">5</span>
+</span><span class='line'><span class="n">Async</span> <span class="n">main</span><span class="p">,</span> <span class="n">k4</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class='line'><span class="m">37</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">AsyncFactorials</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class='line'><span class="m">37</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">AsyncFactorials</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class='line'><span class="m">37</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">AsyncFactorials</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class='line'><span class="m">37</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">AsyncFactorials</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class='line'><span class="m">37</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">AsyncList</span><span class="p">,</span> <span class="n">nth</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class='line'><span class="m">26</span>
+</span><span class='line'>
+</span><span class='line'><span class="m">120</span>
+</span><span class='line'><span class="n">Anonymous</span> <span class="n">task</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class='line'><span class="m">37</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">Async</span> <span class="n">main</span><span class="p">,</span> <span class="n">z0</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class='line'><span class="m">37</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>A gist for this LINQPad script can be found here: <a href="https://gist.github.com/4580491">https://gist.github.com/4580491</a>.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Fast Arbitrary Non-Uniform Randoms]]></title>
