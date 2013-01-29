@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Asynchronous Code | The Light Cone]]></title>
   <link href="http://rebcabin.github.com/blog/categories/asynchronous-code/atom.xml" rel="self"/>
   <link href="http://rebcabin.github.com/"/>
-  <updated>2013-01-20T10:42:45-08:00</updated>
+  <updated>2013-01-29T09:08:46-08:00</updated>
   <id>http://rebcabin.github.com/</id>
   <author>
     <name><![CDATA[Brian Beckman (rebcabin = brianbec)]]></name>
@@ -18,96 +18,87 @@
     <link href="http://rebcabin.github.com/blog/2013/01/19/asynchronous-lazy-lists/"/>
     <updated>2013-01-19T22:03:00-08:00</updated>
     <id>http://rebcabin.github.com/blog/2013/01/19/asynchronous-lazy-lists</id>
-    <content type="html"><![CDATA[<h2>SYNCHRONOUS LAZY LISTS</h2>
+    <content type="html"><![CDATA[<h2 id="synchronous-lazy-lists">SYNCHRONOUS LAZY LISTS</h2>
 
-<p>Lazy lists make it easy to write infinite data sets without doing infinite computations. For instance, the following static method in C# will generate a lazy list that serves up all the integers (actually, all the 32-bit integers in an infinite cycle, but we quibble):
-``` csharp A lazy list for an infinite stream of ints
-public static LazyList<int> integers(int n)
-{</p>
+<p>Lazy lists make it easy to write infinite data sets without doing infinite computations. For instance, the following static method in C# will generate a lazy list that serves up all the integers (actually, all the 32-bit integers in an infinite cycle, but we quibble):</p>
 
-<pre><code>return new LazyList&lt;int&gt; {value = n, rest = () =&gt; integers(n + 1)};
-</code></pre>
+<p><code>csharp A lazy list for an infinite stream of ints
+public static LazyList&lt;int&gt; integers(int n)
+{
+    return new LazyList&lt;int&gt; {value = n, rest = () =&gt; integers(n + 1)};
+}
+</code></p>
 
-<p>}
-<code>``
-Notice that an instance of this</code>LazyList<code>type has two properties (or fields, if you prefer): a</code>value<code>and a</code>rest`, which is a function, (lambda expression) that, when invoked, will produce the rest of the infinite stream. That's the essence of the technique: keep the infinite stuff in a function, recursively, and pick out values only when you need them.</p>
+<p>Notice that an instance of this <code>LazyList</code> type has two properties (or fields, if you prefer): a <code>value</code> and a <code>rest</code>, which is a function, (lambda expression) that, when invoked, will produce the rest of the infinite stream. That’s the essence of the technique: keep the infinite stuff in a function, recursively, and pick out values only when you need them. </p>
 
-<p>Next is my implementation of the <code>LazyList</code> class.  Of course, I could use <a href="http://msdn.microsoft.com/en-us/library/dd642331.aspx">C#'s built-in <code>Lazy</code> type</a>, but I am, on purpose, doing the details myself for deeper understanding and exploration. We're going to morph these into task-based LazyLists that produce the downstream values asynchronously:</p>
+<p>Next is my implementation of the <code>LazyList</code> class.  Of course, I could use <a href="http://msdn.microsoft.com/en-us/library/dd642331.aspx">C#’s built-in <code>Lazy</code> type</a>, but I am, on purpose, doing the details myself for deeper understanding and exploration. We’re going to morph these into task-based LazyLists that produce the downstream values asynchronously:</p>
 
 <p>``` csharp Implementation of the LazyList class
-public class LazyList<T>
-{</p>
+public class LazyList<t>
+{
+    public T value;
+    public Func&lt;LazyList<t>&gt; rest;</t></t></p>
 
-<pre><code>public T value;
-public Func&lt;LazyList&lt;T&gt;&gt; rest;
-
-public T nth(int n)
+<pre><code>public T nth(int n)
 {
     return 
         (n &lt;= 1) ? 
         value : 
         rest().nth(n - 1);
-}
+} } ```
 </code></pre>
 
-<p>}
-```</p>
+<p>In addition to the properties already mentioned, I’ve included an <code>nth</code> method that walks up the lazy list in O(n) time to get the <code>n</code>-th item (without the <a href="http://stackoverflow.com/questions/7102520/does-c-sharp-do-tail-recursion">tail-recursion optimization</a>, this code will also consume O(n) space on the stack).  This is not designed to fetch the <code>n</code>-th item directly, as is possible with some <a href="http://en.wikipedia.org/wiki/Spigot_algorithm">spigot algorithms</a>, and it might be very interesting to explore spigots using lazy techniques in C#, but perhaps another time.</p>
 
-<p>In addition to the properties already mentioned, I've included an <code>nth</code> method that walks up the lazy list in O(n) time to get the <code>n</code>-th item (without the <a href="http://stackoverflow.com/questions/7102520/does-c-sharp-do-tail-recursion">tail-recursion optimization</a>, this code will also consume O(n) space on the stack).  This is not designed to fetch the <code>n</code>-th item directly, as is possible with some <a href="http://en.wikipedia.org/wiki/Spigot_algorithm">spigot algorithms</a>, and it might be very interesting to explore spigots using lazy techniques in C#, but perhaps another time.</p>
+<p>Next is a little more meat on the bones: the obligatory factorial:</p>
 
-<p>Next is a little more meat on the bones: the obligatory factorial:
-``` csharp A LazyList that produces factorials
-public static LazyList<int> factorials(int n)
-{</p>
-
-<pre><code>return new LazyList&lt;int&gt; 
+<p><code>csharp A LazyList that produces factorials
+public static LazyList&lt;int&gt; factorials(int n)
 {
-    value = (n &lt;= 1) ? 1 : n * factorials(n - 1).value, 
-    rest = () =&gt; factorials(n + 1)
-};
-</code></pre>
-
-<p>}
-```</p>
+    return new LazyList&lt;int&gt; 
+    {
+        value = (n &lt;= 1) ? 1 : n * factorials(n - 1).value, 
+        rest = () =&gt; factorials(n + 1)
+    };
+}
+</code></p>
 
 <p>This one uses recursion in the production of <code>value</code>.  There are two uses of recursion: <code>value</code> recursively uses prior values, <code>rest</code> recursively produces future values. This is pretty neat. Both uses of recursion are completely synchronous and all this code runs on one thread.</p>
 
-<p>We could go on to fibonaccis and more exotic streams; we could anonymize these for remoting, memoize them for efficiency, as explained <a href="http://rebcabin.github.com/blog/2012/12/08/anonymous-memoizing-lazy-lists/">an earlier post on this blog</a>; but that's not where we're going today.</p>
+<p>We could go on to fibonaccis and more exotic streams; we could anonymize these for remoting, memoize them for efficiency, as explained <a href="http://rebcabin.github.com/blog/2012/12/08/anonymous-memoizing-lazy-lists/">an earlier post on this blog</a>; but that’s not where we’re going today.</p>
 
-<p>One last thing before going <code>async</code>, and thats for a bit of code that exercises the above, using <a href="http://www.linqpad.net">LinqPad</a>:
-``` csharp Exercising the LazyLists
+<p>One last thing before going <code>async</code>, and thats for a bit of code that exercises the above, using <a href="http://www.linqpad.net">LinqPad</a>:</p>
+
+<p>``` csharp Exercising the LazyLists
 void Main()
-{</p>
+{
+    var k1 = integers(1);
+    // Expect 5
+    k1.nth(5).Dump();</p>
 
-<pre><code>var k1 = integers(1);
-// Expect 5
-k1.nth(5).Dump();
-
-var k2 = factorials(1);
+<pre><code>var k2 = factorials(1);
 // Expect 120
 k2.nth(5).Dump();
 
 // A hint for what's coming up next
-AsyncMain();
+AsyncMain(); } ```
 </code></pre>
 
-<p>}
-```
-Much more with synchronous lazy streams can be found in this wonderful paper:
+<p>Much more with synchronous lazy streams can be found in this wonderful paper: 
 <a href="http://www.cs.dartmouth.edu/~doug/music.ps.gz">Music of the Streams by Doug McIlroy</a>. But on to asynchrony for us.</p>
 
-<h2>ASYNCHRONOUS LAZY LISTS WITH TASK</h2>
+<h2 id="asynchronous-lazy-lists-with-task">ASYNCHRONOUS LAZY LISTS WITH TASK</h2>
 
-<p>Let's start with 'what-we-want' in AsyncMain:
-``` csharp AsyncMain
+<p>Let’s start with ‘what-we-want’ in AsyncMain:</p>
+
+<p>``` csharp AsyncMain
 public static async void AsyncMain()
-{</p>
+{
+    DumpThreadId(“Async main, k3: “); <br />
+    var k3 = asyncIntegers(1);
+    (await k3.nth(5)).Dump();</p>
 
-<pre><code>DumpThreadId("Async main, k3: ");   
-var k3 = asyncIntegers(1);
-(await k3.nth(5)).Dump();
-
-DumpThreadId("Async main, k4: ");
+<pre><code>DumpThreadId("Async main, k4: ");
 var k4 = asyncFactorials(1);
 (await k4.nth(5)).Dump();
 
@@ -117,142 +108,132 @@ var z0 = (await Task.Run(() =&gt;
     return 42;
 }));
 
-DumpThreadId("Async main, z0: ");
+DumpThreadId("Async main, z0: "); } ```
 </code></pre>
 
-<p>}
-```</p>
-
-<p>We made a new main because <a href="http://msdn.microsoft.com/en-us/library/vstudio/hh156513.aspx">we needed it to be <code>async</code></a> and we can't mark the regular <code>Main</code> as <code>async</code>.  What we want, here, is to <code>await</code> the computation of <code>asyncIntegers</code> and <code>asyncFactorials</code> in the body of <code>AsyncMain</code>.  This can cause various threads to jump around in our code, so we're careful to print thread id's after every <code>await</code> and in the body of every lambda expression that runs asynchronously in
+<p>We made a new main because <a href="http://msdn.microsoft.com/en-us/library/vstudio/hh156513.aspx">we needed it to be <code>async</code></a> and we can’t mark the regular <code>Main</code> as <code>async</code>.  What we want, here, is to <code>await</code> the computation of <code>asyncIntegers</code> and <code>asyncFactorials</code> in the body of <code>AsyncMain</code>.  This can cause various threads to jump around in our code, so we’re careful to print thread id’s after every <code>await</code> and in the body of every lambda expression that runs asynchronously in 
 a task, via the following static method:</p>
 
 <p><code>csharp How to dump a thread id
 public static void DumpThreadId(string msg = "")
 {   System.Threading.Thread.CurrentThread.ManagedThreadId.Dump(msg + "Thread Id");
 }
-</code>
-We'll also insert a number of artificial random delays to try to entice the thread scheduler to send different threads through our code.  None of these <code>Sleeps</code> are part of the algorithm at all; they're here to induce interesting behavior.</p>
+</code></p>
 
-<p>Now look at the implementation of <code>asyncIntegers</code>:
-``` csharp asyncIntegers
-public static AsyncList<int> asyncIntegers(int n)
-{   return new AsyncList<int></p>
+<p>We’ll also insert a number of artificial random delays to try to entice the thread scheduler to send different threads through our code.  None of these <code>Sleeps</code> are part of the algorithm at all; they’re here to induce interesting behavior.</p>
 
-<pre><code>{   value = n, 
-    rest = () =&gt; 
-    {   DumpThreadId("AsyncIntegers, rest: ");
-        Thread.Sleep(ran.Next(200));
-        return asyncIntegers(n + 1);
-    }
-};
-</code></pre>
+<p>Now look at the implementation of <code>asyncIntegers</code>:</p>
 
-<p>}
-```</p>
+<p><code>csharp asyncIntegers
+public static AsyncList&lt;int&gt; asyncIntegers(int n)
+{   return new AsyncList&lt;int&gt; 
+    {   value = n, 
+        rest = () =&gt; 
+        {   DumpThreadId("AsyncIntegers, rest: ");
+            Thread.Sleep(ran.Next(200));
+            return asyncIntegers(n + 1);
+        }
+    };
+}
+</code></p>
 
 <p>Looks just like the implementation of lazy integers.  The variable <code>k3 = asyncIntegers(5)</code> in <code>AsyncMain</code> must be of type <code>AsyncList</code>.   The deeper differences are in <code>nth</code>, the method we use to walk the lazy list:</p>
 
 <p>``` csharp AsyncList
-public class AsyncList<T>
-{   public T value;</p>
+public class AsyncList<t>
+{   public T value;
+    public Func&lt;AsyncList<t>&gt; rest;</t></t></p>
 
-<pre><code>public Func&lt;AsyncList&lt;T&gt;&gt; rest;
-
-public async Task&lt;T&gt; nth(int n)
+<pre><code>public async Task&lt;T&gt; nth(int n)
 {   return
         (n &lt;= 1) ?
         await (Task.Run(() =&gt; 
         {   DumpThreadId("AsyncList, nth: ");
             return value;
         })) :
-        await ((await Task.Run(() =&gt; 
+        await Task.Run(() =&gt; 
         {   Thread.Sleep(ran.Next(200));
-            return rest();
-        })).nth(n - 1));
-}
+            return rest().nth(n - 1);
+        });
+} } ```
 </code></pre>
-
-<p>}
-```</p>
 
 <p>We use only one facet of <a href="http://msdn.microsoft.com/en-us/library/vstudio/dd321424.aspx">the multifaceted <code>Task</code> class</a>. The rule we use is that <code>Task.Run</code>, when given a <code>Func&lt;T&gt;</code>, produces a <code>Task&lt;T&gt;</code>. Awaiting a <code>Task&lt;T&gt;</code> prduces a <code>T</code>.  So, except for the routing through <code>Task</code>, it looks like invoking a <code>Func&lt;T&gt;</code> to produce a <code>T</code>. This seems like a minimal intrusion of task-ness on our original lazy-list design.</p>
 
-<p>Look at the first branch of <code>nth</code>, when <code>n &lt;= 1</code>. We <code>await</code> a <code>Task.Run</code> of a <code>Func&lt;T&gt;</code> that produces <code>value</code>, so the result of the <code>await</code> is of type <code>T</code>, the type of <code>value</code>.  This <code>T</code> gets returned through an <code>async</code> method, namely <code>nth</code>, so it gets converted back into a <code>Task&lt;T&gt;</code> on the way out.  In the body of <code>AsyncMain</code>, where we are calling <code>nth</code>, we <code>await</code> this <code>Task&lt;T&gt;</code>, getting back a <code>T</code> in the end.</p>
+<p>Look at the first branch of <code>nth</code>, when <code>n &lt;= 1</code>. We <code>await</code> a <code>Task.Run</code> of a <code>Func&lt;T&gt;</code> that produces <code>value</code>, so the result of the <code>await</code> is of type <code>T</code>, the type of <code>value</code>.  This <code>T</code> gets returned through an <code>async</code> method, namely <code>nth</code>, so it gets converted back into a <code>Task&lt;T&gt;</code> on the way out.  In the body of <code>AsyncMain</code>, where we are calling <code>nth</code>, we <code>await</code> this <code>Task&lt;T&gt;</code>, getting back a <code>T</code> in the end. </p>
 
-<p><code>T</code>'s become <code>Task&lt;T&gt;</code> when run under <code>Task.Run</code> or when returned from any <code>async</code> method that would otherwise produce a <code>T</code>.  <code>Task&lt;T&gt;</code>'s become <code>T</code>'s when <code>awaited</code> (there's a monad in here somewhere, but that's for another time, too).</p>
+<p><code>T</code>’s become <code>Task&lt;T&gt;</code> when run under <code>Task.Run</code> or when returned from any <code>async</code> method that would otherwise produce a <code>T</code>.  <code>Task&lt;T&gt;</code>’s become <code>T</code>’s when <code>awaited</code> (there’s a monad in here somewhere, but that’s for another time, too).</p>
 
-<p>On the other branch of <code>nth</code>, The new <code>rest</code> will walk up the lazy list just as before, only awaiting two values. The innermost lambda expression produces an <code>AsyncList</code>, so its <code>Task.Run</code> produces a <code>Task&lt;AsyncList&gt;</code>. Let's <code>Await</code> that to get the recursive <code>AsyncList</code>, just as before with <code>LazyList</code>. Now dot-in the recursive call to <code>nth(n-1)</code>, producing a <code>Task&lt;T&gt;</code>; <code>await</code> that to get a <code>T</code>; and return it through the <code>async</code> to get a <code>Task&lt;T&gt;</code> on the way out.</p>
+<p>On the other branch of <code>nth</code>, The new <code>rest</code> will walk up the lazy list just as before, only awaiting the value of <code>rest().nth(n-1)</code> to get a <code>T</code>; and returning it through the <code>async</code> to get a <code>Task&lt;T&gt;</code> on the way out (EDIT: thanks to Brian Grunkmeyer for a bug fix here).</p>
 
-<p>On both branches, <code>nth</code> is of type <code>Task&lt;T&gt;</code>, just what we need to <code>await</code> on in the caller to get <code>T</code>'s.</p>
+<p>On both branches, <code>nth</code> is of type <code>Task&lt;T&gt;</code>, just what we need to <code>await</code> on in the caller to get <code>T</code>’s. </p>
 
-<p>Here is the more meaty async factorial, which doesn't differ in any interesting way from the lazy-list factorial:
-``` csharp asyncFactorial
-public static AsyncList<int> asyncFactorials(int n)
-{   return new AsyncList<int></p>
+<p>Here is the more meaty async factorial, which doesn’t differ in any interesting way from the lazy-list factorial:</p>
 
-<pre><code>{   value = (n &lt;= 1) ? 1 : n * asyncFactorials(n - 1).value, 
-    rest = () =&gt; 
-    {   DumpThreadId("AsyncFactorials, rest: ");
-        Thread.Sleep(ran.Next(200));
-        return asyncFactorials(n + 1);
-    }
-};
-</code></pre>
+<p><code>csharp asyncFactorial
+public static AsyncList&lt;int&gt; asyncFactorials(int n)
+{   return new AsyncList&lt;int&gt; 
+    {   value = (n &lt;= 1) ? 1 : n * asyncFactorials(n - 1).value, 
+        rest = () =&gt; 
+        {   DumpThreadId("AsyncFactorials, rest: ");
+            Thread.Sleep(ran.Next(200));
+            return asyncFactorials(n + 1);
+        }
+    };
+}
+</code></p>
 
-<p>}
-```</p>
-
-<p>It may take a few tries to get a lot of thread variety: the thread-pool scheduler seems to have hints from your code and tries to reuse the same thread whenever it can.  But eventually, you can get a trace like the following that shows various thread moving around these tasks.</p>
+<p>It may take a few tries to get a lot of thread variety: the thread-pool scheduler seems to have hints from your code and tries to reuse the same thread whenever it can.  But eventually, you can get a trace like the following that shows various thread moving around these tasks. </p>
 
 <p>```
 5
 120
-Async main, k3: Thread Id
-16</p>
+Async main, k3: Thread Id 
+16 </p>
 
-<p>AsyncIntegers, rest: Thread Id
-22</p>
+<p>AsyncIntegers, rest: Thread Id 
+22 </p>
 
-<p>AsyncIntegers, rest: Thread Id
-37</p>
+<p>AsyncIntegers, rest: Thread Id 
+37 </p>
 
-<p>AsyncIntegers, rest: Thread Id
-37</p>
+<p>AsyncIntegers, rest: Thread Id 
+37 </p>
 
-<p>AsyncIntegers, rest: Thread Id
-37</p>
+<p>AsyncIntegers, rest: Thread Id 
+37 </p>
 
-<p>AsyncList, nth: Thread Id
-37</p>
+<p>AsyncList, nth: Thread Id 
+37 </p>
 
 <p>5
-Async main, k4: Thread Id
-37</p>
+Async main, k4: Thread Id 
+37 </p>
 
-<p>AsyncFactorials, rest: Thread Id
-37</p>
+<p>AsyncFactorials, rest: Thread Id 
+37 </p>
 
-<p>AsyncFactorials, rest: Thread Id
-37</p>
+<p>AsyncFactorials, rest: Thread Id 
+37 </p>
 
-<p>AsyncFactorials, rest: Thread Id
-37</p>
+<p>AsyncFactorials, rest: Thread Id 
+37 </p>
 
-<p>AsyncFactorials, rest: Thread Id
-37</p>
+<p>AsyncFactorials, rest: Thread Id 
+37 </p>
 
-<p>AsyncList, nth: Thread Id
-26</p>
+<p>AsyncList, nth: Thread Id 
+26 </p>
 
 <p>120
-Anonymous task: Thread Id
-37</p>
+Anonymous task: Thread Id 
+37 </p>
 
-<p>Async main, z0: Thread Id
-37
+<p>Async main, z0: Thread Id 
+37 
 ```</p>
 
-<p>A gist for this LINQPad script can be found here: <a href="https://gist.github.com/4580491">https://gist.github.com/4580491</a>.</p>
+<p>A gist for this LINQPad script can be found here: <a href="https://gist.github.com/4580491">https://gist.github.com/4580491</a>.  </p>
 ]]></content>
   </entry>
   

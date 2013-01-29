@@ -4,7 +4,7 @@
   <title><![CDATA[The Light Cone]]></title>
   <link href="http://rebcabin.github.com/atom.xml" rel="self"/>
   <link href="http://rebcabin.github.com/"/>
-  <updated>2013-01-20T10:42:45-08:00</updated>
+  <updated>2013-01-29T09:08:46-08:00</updated>
   <id>http://rebcabin.github.com/</id>
   <author>
     <name><![CDATA[Brian Beckman (rebcabin = brianbec)]]></name>
@@ -18,367 +18,357 @@
     <link href="http://rebcabin.github.com/blog/2013/01/19/asynchronous-lazy-lists/"/>
     <updated>2013-01-19T22:03:00-08:00</updated>
     <id>http://rebcabin.github.com/blog/2013/01/19/asynchronous-lazy-lists</id>
-    <content type="html"><![CDATA[<h2>SYNCHRONOUS LAZY LISTS</h2>
+    <content type="html"><![CDATA[<h2 id="synchronous-lazy-lists">SYNCHRONOUS LAZY LISTS</h2>
 
 <p>Lazy lists make it easy to write infinite data sets without doing infinite computations. For instance, the following static method in C# will generate a lazy list that serves up all the integers (actually, all the 32-bit integers in an infinite cycle, but we quibble):</p>
 
-<figure class='code'><figcaption><span>A lazy list for an infinite stream of ints</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="n">LazyList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span> <span class="n">integers</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="k">new</span> <span class="n">LazyList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span> <span class="p">{</span><span class="k">value</span> <span class="p">=</span> <span class="n">n</span><span class="p">,</span> <span class="n">rest</span> <span class="p">=</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">integers</span><span class="p">(</span><span class="n">n</span> <span class="p">+</span> <span class="m">1</span><span class="p">)};</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span>A lazy list for an infinite stream of ints</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="csharp"><span class="line"><span class="k">public</span> <span class="k">static</span> <span class="n">LazyList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span> <span class="n">integers</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line">    <span class="k">return</span> <span class="k">new</span> <span class="n">LazyList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span> <span class="p">{</span><span class="k">value</span> <span class="p">=</span> <span class="n">n</span><span class="p">,</span> <span class="n">rest</span> <span class="p">=</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">integers</span><span class="p">(</span><span class="n">n</span> <span class="p">+</span> <span class="m">1</span><span class="p">)};</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
+<p>Notice that an instance of this <code>LazyList</code> type has two properties (or fields, if you prefer): a <code>value</code> and a <code>rest</code>, which is a function, (lambda expression) that, when invoked, will produce the rest of the infinite stream. That’s the essence of the technique: keep the infinite stuff in a function, recursively, and pick out values only when you need them. </p>
 
-<p>Notice that an instance of this <code>LazyList</code> type has two properties (or fields, if you prefer): a <code>value</code> and a <code>rest</code>, which is a function, (lambda expression) that, when invoked, will produce the rest of the infinite stream. That&#8217;s the essence of the technique: keep the infinite stuff in a function, recursively, and pick out values only when you need them.</p>
+<p>Next is my implementation of the <code>LazyList</code> class.  Of course, I could use <a href="http://msdn.microsoft.com/en-us/library/dd642331.aspx">C#’s built-in <code>Lazy</code> type</a>, but I am, on purpose, doing the details myself for deeper understanding and exploration. We’re going to morph these into task-based LazyLists that produce the downstream values asynchronously:</p>
 
-<p>Next is my implementation of the <code>LazyList</code> class.  Of course, I could use <a href="http://msdn.microsoft.com/en-us/library/dd642331.aspx">C#&#8217;s built-in <code>Lazy</code> type</a>, but I am, on purpose, doing the details myself for deeper understanding and exploration. We&#8217;re going to morph these into task-based LazyLists that produce the downstream values asynchronously:</p>
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span>Implementation of the LazyList class</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+</pre></td><td class="code"><pre><code class="csharp"><span class="line"><span class="k">public</span> <span class="k">class</span> <span class="nc">LazyList</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line">    <span class="k">public</span> <span class="n">T</span> <span class="k">value</span><span class="p">;</span>
+</span><span class="line">    <span class="k">public</span> <span class="n">Func</span><span class="p">&lt;</span><span class="n">LazyList</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;&gt;</span> <span class="n">rest</span><span class="p">;</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">public</span> <span class="n">T</span> <span class="nf">nth</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
+</span><span class="line">    <span class="p">{</span>
+</span><span class="line">        <span class="k">return</span>
+</span><span class="line">            <span class="p">(</span><span class="n">n</span> <span class="p">&lt;=</span> <span class="m">1</span><span class="p">)</span> <span class="p">?</span>
+</span><span class="line">            <span class="k">value</span> <span class="p">:</span>
+</span><span class="line">            <span class="n">rest</span><span class="p">().</span><span class="n">nth</span><span class="p">(</span><span class="n">n</span> <span class="p">-</span> <span class="m">1</span><span class="p">);</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<figure class='code'><figcaption><span>Implementation of the LazyList class</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">class</span> <span class="nc">LazyList</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">public</span> <span class="n">T</span> <span class="k">value</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">public</span> <span class="n">Func</span><span class="p">&lt;</span><span class="n">LazyList</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;&gt;</span> <span class="n">rest</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">public</span> <span class="n">T</span> <span class="nf">nth</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">{</span>
-</span><span class='line'>        <span class="k">return</span>
-</span><span class='line'>            <span class="p">(</span><span class="n">n</span> <span class="p">&lt;=</span> <span class="m">1</span><span class="p">)</span> <span class="p">?</span>
-</span><span class='line'>            <span class="k">value</span> <span class="p">:</span>
-</span><span class='line'>            <span class="n">rest</span><span class="p">().</span><span class="n">nth</span><span class="p">(</span><span class="n">n</span> <span class="p">-</span> <span class="m">1</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>In addition to the properties already mentioned, I&#8217;ve included an <code>nth</code> method that walks up the lazy list in O(n) time to get the <code>n</code>-th item (without the <a href="http://stackoverflow.com/questions/7102520/does-c-sharp-do-tail-recursion">tail-recursion optimization</a>, this code will also consume O(n) space on the stack).  This is not designed to fetch the <code>n</code>-th item directly, as is possible with some <a href="http://en.wikipedia.org/wiki/Spigot_algorithm">spigot algorithms</a>, and it might be very interesting to explore spigots using lazy techniques in C#, but perhaps another time.</p>
+<p>In addition to the properties already mentioned, I’ve included an <code>nth</code> method that walks up the lazy list in O(n) time to get the <code>n</code>-th item (without the <a href="http://stackoverflow.com/questions/7102520/does-c-sharp-do-tail-recursion">tail-recursion optimization</a>, this code will also consume O(n) space on the stack).  This is not designed to fetch the <code>n</code>-th item directly, as is possible with some <a href="http://en.wikipedia.org/wiki/Spigot_algorithm">spigot algorithms</a>, and it might be very interesting to explore spigots using lazy techniques in C#, but perhaps another time.</p>
 
 <p>Next is a little more meat on the bones: the obligatory factorial:</p>
 
-<figure class='code'><figcaption><span>A LazyList that produces factorials</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="n">LazyList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span> <span class="n">factorials</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="k">new</span> <span class="n">LazyList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span>
-</span><span class='line'>    <span class="p">{</span>
-</span><span class='line'>        <span class="k">value</span> <span class="p">=</span> <span class="p">(</span><span class="n">n</span> <span class="p">&lt;=</span> <span class="m">1</span><span class="p">)</span> <span class="p">?</span> <span class="m">1</span> <span class="p">:</span> <span class="n">n</span> <span class="p">*</span> <span class="n">factorials</span><span class="p">(</span><span class="n">n</span> <span class="p">-</span> <span class="m">1</span><span class="p">).</span><span class="k">value</span><span class="p">,</span>
-</span><span class='line'>        <span class="n">rest</span> <span class="p">=</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">factorials</span><span class="p">(</span><span class="n">n</span> <span class="p">+</span> <span class="m">1</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">};</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span>A LazyList that produces factorials</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class="csharp"><span class="line"><span class="k">public</span> <span class="k">static</span> <span class="n">LazyList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span> <span class="n">factorials</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line">    <span class="k">return</span> <span class="k">new</span> <span class="n">LazyList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span>
+</span><span class="line">    <span class="p">{</span>
+</span><span class="line">        <span class="k">value</span> <span class="p">=</span> <span class="p">(</span><span class="n">n</span> <span class="p">&lt;=</span> <span class="m">1</span><span class="p">)</span> <span class="p">?</span> <span class="m">1</span> <span class="p">:</span> <span class="n">n</span> <span class="p">*</span> <span class="n">factorials</span><span class="p">(</span><span class="n">n</span> <span class="p">-</span> <span class="m">1</span><span class="p">).</span><span class="k">value</span><span class="p">,</span>
+</span><span class="line">        <span class="n">rest</span> <span class="p">=</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="n">factorials</span><span class="p">(</span><span class="n">n</span> <span class="p">+</span> <span class="m">1</span><span class="p">)</span>
+</span><span class="line">    <span class="p">};</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>This one uses recursion in the production of <code>value</code>.  There are two uses of recursion: <code>value</code> recursively uses prior values, <code>rest</code> recursively produces future values. This is pretty neat. Both uses of recursion are completely synchronous and all this code runs on one thread.</p>
 
-<p>We could go on to fibonaccis and more exotic streams; we could anonymize these for remoting, memoize them for efficiency, as explained <a href="http://rebcabin.github.com/blog/2012/12/08/anonymous-memoizing-lazy-lists/">an earlier post on this blog</a>; but that&#8217;s not where we&#8217;re going today.</p>
+<p>We could go on to fibonaccis and more exotic streams; we could anonymize these for remoting, memoize them for efficiency, as explained <a href="http://rebcabin.github.com/blog/2012/12/08/anonymous-memoizing-lazy-lists/">an earlier post on this blog</a>; but that’s not where we’re going today.</p>
 
 <p>One last thing before going <code>async</code>, and thats for a bit of code that exercises the above, using <a href="http://www.linqpad.net">LinqPad</a>:</p>
 
-<figure class='code'><figcaption><span>Exercising the LazyLists</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">void</span> <span class="nf">Main</span><span class="p">()</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="kt">var</span> <span class="n">k1</span> <span class="p">=</span> <span class="n">integers</span><span class="p">(</span><span class="m">1</span><span class="p">);</span>
-</span><span class='line'>    <span class="c1">// Expect 5</span>
-</span><span class='line'>    <span class="n">k1</span><span class="p">.</span><span class="n">nth</span><span class="p">(</span><span class="m">5</span><span class="p">).</span><span class="n">Dump</span><span class="p">();</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kt">var</span> <span class="n">k2</span> <span class="p">=</span> <span class="n">factorials</span><span class="p">(</span><span class="m">1</span><span class="p">);</span>
-</span><span class='line'>    <span class="c1">// Expect 120</span>
-</span><span class='line'>    <span class="n">k2</span><span class="p">.</span><span class="n">nth</span><span class="p">(</span><span class="m">5</span><span class="p">).</span><span class="n">Dump</span><span class="p">();</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// A hint for what&#39;s coming up next</span>
-</span><span class='line'>    <span class="n">AsyncMain</span><span class="p">();</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span>Exercising the LazyLists</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+</pre></td><td class="code"><pre><code class="csharp"><span class="line"><span class="k">void</span> <span class="nf">Main</span><span class="p">()</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line">    <span class="kt">var</span> <span class="n">k1</span> <span class="p">=</span> <span class="n">integers</span><span class="p">(</span><span class="m">1</span><span class="p">);</span>
+</span><span class="line">    <span class="c1">// Expect 5</span>
+</span><span class="line">    <span class="n">k1</span><span class="p">.</span><span class="n">nth</span><span class="p">(</span><span class="m">5</span><span class="p">).</span><span class="n">Dump</span><span class="p">();</span>
+</span><span class="line">
+</span><span class="line">    <span class="kt">var</span> <span class="n">k2</span> <span class="p">=</span> <span class="n">factorials</span><span class="p">(</span><span class="m">1</span><span class="p">);</span>
+</span><span class="line">    <span class="c1">// Expect 120</span>
+</span><span class="line">    <span class="n">k2</span><span class="p">.</span><span class="n">nth</span><span class="p">(</span><span class="m">5</span><span class="p">).</span><span class="n">Dump</span><span class="p">();</span>
+</span><span class="line">
+</span><span class="line">    <span class="c1">// A hint for what&#39;s coming up next</span>
+</span><span class="line">    <span class="n">AsyncMain</span><span class="p">();</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-
-<p>Much more with synchronous lazy streams can be found in this wonderful paper:
+<p>Much more with synchronous lazy streams can be found in this wonderful paper: 
 <a href="http://www.cs.dartmouth.edu/~doug/music.ps.gz">Music of the Streams by Doug McIlroy</a>. But on to asynchrony for us.</p>
 
-<h2>ASYNCHRONOUS LAZY LISTS WITH TASK</h2>
+<h2 id="asynchronous-lazy-lists-with-task">ASYNCHRONOUS LAZY LISTS WITH TASK</h2>
 
-<p>Let&#8217;s start with &#8216;what-we-want&#8217; in AsyncMain:</p>
+<p>Let’s start with ‘what-we-want’ in AsyncMain:</p>
 
-<figure class='code'><figcaption><span>AsyncMain</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="k">async</span> <span class="k">void</span> <span class="nf">AsyncMain</span><span class="p">()</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;Async main, k3: &quot;</span><span class="p">);</span>
-</span><span class='line'>    <span class="kt">var</span> <span class="n">k3</span> <span class="p">=</span> <span class="n">asyncIntegers</span><span class="p">(</span><span class="m">1</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">(</span><span class="k">await</span> <span class="n">k3</span><span class="p">.</span><span class="n">nth</span><span class="p">(</span><span class="m">5</span><span class="p">)).</span><span class="n">Dump</span><span class="p">();</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;Async main, k4: &quot;</span><span class="p">);</span>
-</span><span class='line'>    <span class="kt">var</span> <span class="n">k4</span> <span class="p">=</span> <span class="n">asyncFactorials</span><span class="p">(</span><span class="m">1</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">(</span><span class="k">await</span> <span class="n">k4</span><span class="p">.</span><span class="n">nth</span><span class="p">(</span><span class="m">5</span><span class="p">)).</span><span class="n">Dump</span><span class="p">();</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kt">var</span> <span class="n">z0</span> <span class="p">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">Task</span><span class="p">.</span><span class="n">Run</span><span class="p">(()</span> <span class="p">=&gt;</span>
-</span><span class='line'>    <span class="p">{</span>   <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;Anonymous task: &quot;</span><span class="p">);</span>
-</span><span class='line'>        <span class="n">Thread</span><span class="p">.</span><span class="n">Sleep</span><span class="p">(</span><span class="n">ran</span><span class="p">.</span><span class="n">Next</span><span class="p">(</span><span class="m">200</span><span class="p">));</span>
-</span><span class='line'>        <span class="k">return</span> <span class="m">42</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}));</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;Async main, z0: &quot;</span><span class="p">);</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span>AsyncMain</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+</pre></td><td class="code"><pre><code class="csharp"><span class="line"><span class="k">public</span> <span class="k">static</span> <span class="k">async</span> <span class="k">void</span> <span class="nf">AsyncMain</span><span class="p">()</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line">    <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;Async main, k3: &quot;</span><span class="p">);</span>
+</span><span class="line">    <span class="kt">var</span> <span class="n">k3</span> <span class="p">=</span> <span class="n">asyncIntegers</span><span class="p">(</span><span class="m">1</span><span class="p">);</span>
+</span><span class="line">    <span class="p">(</span><span class="k">await</span> <span class="n">k3</span><span class="p">.</span><span class="n">nth</span><span class="p">(</span><span class="m">5</span><span class="p">)).</span><span class="n">Dump</span><span class="p">();</span>
+</span><span class="line">
+</span><span class="line">    <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;Async main, k4: &quot;</span><span class="p">);</span>
+</span><span class="line">    <span class="kt">var</span> <span class="n">k4</span> <span class="p">=</span> <span class="n">asyncFactorials</span><span class="p">(</span><span class="m">1</span><span class="p">);</span>
+</span><span class="line">    <span class="p">(</span><span class="k">await</span> <span class="n">k4</span><span class="p">.</span><span class="n">nth</span><span class="p">(</span><span class="m">5</span><span class="p">)).</span><span class="n">Dump</span><span class="p">();</span>
+</span><span class="line">
+</span><span class="line">    <span class="kt">var</span> <span class="n">z0</span> <span class="p">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">Task</span><span class="p">.</span><span class="n">Run</span><span class="p">(()</span> <span class="p">=&gt;</span>
+</span><span class="line">    <span class="p">{</span>   <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;Anonymous task: &quot;</span><span class="p">);</span>
+</span><span class="line">        <span class="n">Thread</span><span class="p">.</span><span class="n">Sleep</span><span class="p">(</span><span class="n">ran</span><span class="p">.</span><span class="n">Next</span><span class="p">(</span><span class="m">200</span><span class="p">));</span>
+</span><span class="line">        <span class="k">return</span> <span class="m">42</span><span class="p">;</span>
+</span><span class="line">    <span class="p">}));</span>
+</span><span class="line">
+</span><span class="line">    <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;Async main, z0: &quot;</span><span class="p">);</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-
-<p>We made a new main because <a href="http://msdn.microsoft.com/en-us/library/vstudio/hh156513.aspx">we needed it to be <code>async</code></a> and we can&#8217;t mark the regular <code>Main</code> as <code>async</code>.  What we want, here, is to <code>await</code> the computation of <code>asyncIntegers</code> and <code>asyncFactorials</code> in the body of <code>AsyncMain</code>.  This can cause various threads to jump around in our code, so we&#8217;re careful to print thread id&#8217;s after every <code>await</code> and in the body of every lambda expression that runs asynchronously in
+<p>We made a new main because <a href="http://msdn.microsoft.com/en-us/library/vstudio/hh156513.aspx">we needed it to be <code>async</code></a> and we can’t mark the regular <code>Main</code> as <code>async</code>.  What we want, here, is to <code>await</code> the computation of <code>asyncIntegers</code> and <code>asyncFactorials</code> in the body of <code>AsyncMain</code>.  This can cause various threads to jump around in our code, so we’re careful to print thread id’s after every <code>await</code> and in the body of every lambda expression that runs asynchronously in 
 a task, via the following static method:</p>
 
-<figure class='code'><figcaption><span>How to dump a thread id</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="k">void</span> <span class="nf">DumpThreadId</span><span class="p">(</span><span class="kt">string</span> <span class="n">msg</span> <span class="p">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
-</span><span class='line'><span class="p">{</span>   <span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Thread</span><span class="p">.</span><span class="n">CurrentThread</span><span class="p">.</span><span class="n">ManagedThreadId</span><span class="p">.</span><span class="n">Dump</span><span class="p">(</span><span class="n">msg</span> <span class="p">+</span> <span class="s">&quot;Thread Id&quot;</span><span class="p">);</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span>How to dump a thread id</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="csharp"><span class="line"><span class="k">public</span> <span class="k">static</span> <span class="k">void</span> <span class="nf">DumpThreadId</span><span class="p">(</span><span class="kt">string</span> <span class="n">msg</span> <span class="p">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
+</span><span class="line"><span class="p">{</span>   <span class="n">System</span><span class="p">.</span><span class="n">Threading</span><span class="p">.</span><span class="n">Thread</span><span class="p">.</span><span class="n">CurrentThread</span><span class="p">.</span><span class="n">ManagedThreadId</span><span class="p">.</span><span class="n">Dump</span><span class="p">(</span><span class="n">msg</span> <span class="p">+</span> <span class="s">&quot;Thread Id&quot;</span><span class="p">);</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-
-<p>We&#8217;ll also insert a number of artificial random delays to try to entice the thread scheduler to send different threads through our code.  None of these <code>Sleeps</code> are part of the algorithm at all; they&#8217;re here to induce interesting behavior.</p>
+<p>We’ll also insert a number of artificial random delays to try to entice the thread scheduler to send different threads through our code.  None of these <code>Sleeps</code> are part of the algorithm at all; they’re here to induce interesting behavior.</p>
 
 <p>Now look at the implementation of <code>asyncIntegers</code>:</p>
 
-<figure class='code'><figcaption><span>asyncIntegers</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="n">AsyncList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span> <span class="n">asyncIntegers</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
-</span><span class='line'><span class="p">{</span>   <span class="k">return</span> <span class="k">new</span> <span class="n">AsyncList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span>
-</span><span class='line'>    <span class="p">{</span>   <span class="k">value</span> <span class="p">=</span> <span class="n">n</span><span class="p">,</span>
-</span><span class='line'>        <span class="n">rest</span> <span class="p">=</span> <span class="p">()</span> <span class="p">=&gt;</span>
-</span><span class='line'>        <span class="p">{</span>   <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;AsyncIntegers, rest: &quot;</span><span class="p">);</span>
-</span><span class='line'>            <span class="n">Thread</span><span class="p">.</span><span class="n">Sleep</span><span class="p">(</span><span class="n">ran</span><span class="p">.</span><span class="n">Next</span><span class="p">(</span><span class="m">200</span><span class="p">));</span>
-</span><span class='line'>            <span class="k">return</span> <span class="nf">asyncIntegers</span><span class="p">(</span><span class="n">n</span> <span class="p">+</span> <span class="m">1</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">};</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span>asyncIntegers</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+</pre></td><td class="code"><pre><code class="csharp"><span class="line"><span class="k">public</span> <span class="k">static</span> <span class="n">AsyncList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span> <span class="n">asyncIntegers</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
+</span><span class="line"><span class="p">{</span>   <span class="k">return</span> <span class="k">new</span> <span class="n">AsyncList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span>
+</span><span class="line">    <span class="p">{</span>   <span class="k">value</span> <span class="p">=</span> <span class="n">n</span><span class="p">,</span>
+</span><span class="line">        <span class="n">rest</span> <span class="p">=</span> <span class="p">()</span> <span class="p">=&gt;</span>
+</span><span class="line">        <span class="p">{</span>   <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;AsyncIntegers, rest: &quot;</span><span class="p">);</span>
+</span><span class="line">            <span class="n">Thread</span><span class="p">.</span><span class="n">Sleep</span><span class="p">(</span><span class="n">ran</span><span class="p">.</span><span class="n">Next</span><span class="p">(</span><span class="m">200</span><span class="p">));</span>
+</span><span class="line">            <span class="k">return</span> <span class="nf">asyncIntegers</span><span class="p">(</span><span class="n">n</span> <span class="p">+</span> <span class="m">1</span><span class="p">);</span>
+</span><span class="line">        <span class="p">}</span>
+</span><span class="line">    <span class="p">};</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Looks just like the implementation of lazy integers.  The variable <code>k3 = asyncIntegers(5)</code> in <code>AsyncMain</code> must be of type <code>AsyncList</code>.   The deeper differences are in <code>nth</code>, the method we use to walk the lazy list:</p>
 
-<figure class='code'><figcaption><span>AsyncList</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">class</span> <span class="nc">AsyncList</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span>
-</span><span class='line'><span class="p">{</span>   <span class="k">public</span> <span class="n">T</span> <span class="k">value</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">public</span> <span class="n">Func</span><span class="p">&lt;</span><span class="n">AsyncList</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;&gt;</span> <span class="n">rest</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">public</span> <span class="k">async</span> <span class="n">Task</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span> <span class="n">nth</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">{</span>   <span class="k">return</span>
-</span><span class='line'>            <span class="p">(</span><span class="n">n</span> <span class="p">&lt;=</span> <span class="m">1</span><span class="p">)</span> <span class="p">?</span>
-</span><span class='line'>            <span class="k">await</span> <span class="p">(</span><span class="n">Task</span><span class="p">.</span><span class="n">Run</span><span class="p">(()</span> <span class="p">=&gt;</span>
-</span><span class='line'>            <span class="p">{</span>   <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;AsyncList, nth: &quot;</span><span class="p">);</span>
-</span><span class='line'>                <span class="k">return</span> <span class="k">value</span><span class="p">;</span>
-</span><span class='line'>            <span class="p">}))</span> <span class="p">:</span>
-</span><span class='line'>            <span class="k">await</span> <span class="p">((</span><span class="k">await</span> <span class="n">Task</span><span class="p">.</span><span class="n">Run</span><span class="p">(()</span> <span class="p">=&gt;</span>
-</span><span class='line'>            <span class="p">{</span>   <span class="n">Thread</span><span class="p">.</span><span class="n">Sleep</span><span class="p">(</span><span class="n">ran</span><span class="p">.</span><span class="n">Next</span><span class="p">(</span><span class="m">200</span><span class="p">));</span>
-</span><span class='line'>                <span class="k">return</span> <span class="nf">rest</span><span class="p">();</span>
-</span><span class='line'>            <span class="p">})).</span><span class="n">nth</span><span class="p">(</span><span class="n">n</span> <span class="p">-</span> <span class="m">1</span><span class="p">));</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span>AsyncList</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+</pre></td><td class="code"><pre><code class="csharp"><span class="line"><span class="k">public</span> <span class="k">class</span> <span class="nc">AsyncList</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span>
+</span><span class="line"><span class="p">{</span>   <span class="k">public</span> <span class="n">T</span> <span class="k">value</span><span class="p">;</span>
+</span><span class="line">    <span class="k">public</span> <span class="n">Func</span><span class="p">&lt;</span><span class="n">AsyncList</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;&gt;</span> <span class="n">rest</span><span class="p">;</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">public</span> <span class="k">async</span> <span class="n">Task</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span> <span class="n">nth</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
+</span><span class="line">    <span class="p">{</span>   <span class="k">return</span>
+</span><span class="line">            <span class="p">(</span><span class="n">n</span> <span class="p">&lt;=</span> <span class="m">1</span><span class="p">)</span> <span class="p">?</span>
+</span><span class="line">            <span class="k">await</span> <span class="p">(</span><span class="n">Task</span><span class="p">.</span><span class="n">Run</span><span class="p">(()</span> <span class="p">=&gt;</span>
+</span><span class="line">            <span class="p">{</span>   <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;AsyncList, nth: &quot;</span><span class="p">);</span>
+</span><span class="line">                <span class="k">return</span> <span class="k">value</span><span class="p">;</span>
+</span><span class="line">            <span class="p">}))</span> <span class="p">:</span>
+</span><span class="line">            <span class="k">await</span> <span class="n">Task</span><span class="p">.</span><span class="n">Run</span><span class="p">(()</span> <span class="p">=&gt;</span>
+</span><span class="line">            <span class="p">{</span>   <span class="n">Thread</span><span class="p">.</span><span class="n">Sleep</span><span class="p">(</span><span class="n">ran</span><span class="p">.</span><span class="n">Next</span><span class="p">(</span><span class="m">200</span><span class="p">));</span>
+</span><span class="line">                <span class="k">return</span> <span class="nf">rest</span><span class="p">().</span><span class="n">nth</span><span class="p">(</span><span class="n">n</span> <span class="p">-</span> <span class="m">1</span><span class="p">);</span>
+</span><span class="line">            <span class="p">});</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>We use only one facet of <a href="http://msdn.microsoft.com/en-us/library/vstudio/dd321424.aspx">the multifaceted <code>Task</code> class</a>. The rule we use is that <code>Task.Run</code>, when given a <code>Func&lt;T&gt;</code>, produces a <code>Task&lt;T&gt;</code>. Awaiting a <code>Task&lt;T&gt;</code> prduces a <code>T</code>.  So, except for the routing through <code>Task</code>, it looks like invoking a <code>Func&lt;T&gt;</code> to produce a <code>T</code>. This seems like a minimal intrusion of task-ness on our original lazy-list design.</p>
 
-<p>Look at the first branch of <code>nth</code>, when <code>n &lt;= 1</code>. We <code>await</code> a <code>Task.Run</code> of a <code>Func&lt;T&gt;</code> that produces <code>value</code>, so the result of the <code>await</code> is of type <code>T</code>, the type of <code>value</code>.  This <code>T</code> gets returned through an <code>async</code> method, namely <code>nth</code>, so it gets converted back into a <code>Task&lt;T&gt;</code> on the way out.  In the body of <code>AsyncMain</code>, where we are calling <code>nth</code>, we <code>await</code> this <code>Task&lt;T&gt;</code>, getting back a <code>T</code> in the end.</p>
+<p>Look at the first branch of <code>nth</code>, when <code>n &lt;= 1</code>. We <code>await</code> a <code>Task.Run</code> of a <code>Func&lt;T&gt;</code> that produces <code>value</code>, so the result of the <code>await</code> is of type <code>T</code>, the type of <code>value</code>.  This <code>T</code> gets returned through an <code>async</code> method, namely <code>nth</code>, so it gets converted back into a <code>Task&lt;T&gt;</code> on the way out.  In the body of <code>AsyncMain</code>, where we are calling <code>nth</code>, we <code>await</code> this <code>Task&lt;T&gt;</code>, getting back a <code>T</code> in the end. </p>
 
-<p><code>T</code>&#8217;s become <code>Task&lt;T&gt;</code> when run under <code>Task.Run</code> or when returned from any <code>async</code> method that would otherwise produce a <code>T</code>.  <code>Task&lt;T&gt;</code>&#8217;s become <code>T</code>&#8217;s when <code>awaited</code> (there&#8217;s a monad in here somewhere, but that&#8217;s for another time, too).</p>
+<p><code>T</code>’s become <code>Task&lt;T&gt;</code> when run under <code>Task.Run</code> or when returned from any <code>async</code> method that would otherwise produce a <code>T</code>.  <code>Task&lt;T&gt;</code>’s become <code>T</code>’s when <code>awaited</code> (there’s a monad in here somewhere, but that’s for another time, too).</p>
 
-<p>On the other branch of <code>nth</code>, The new <code>rest</code> will walk up the lazy list just as before, only awaiting two values. The innermost lambda expression produces an <code>AsyncList</code>, so its <code>Task.Run</code> produces a <code>Task&lt;AsyncList&gt;</code>. Let&#8217;s <code>Await</code> that to get the recursive <code>AsyncList</code>, just as before with <code>LazyList</code>. Now dot-in the recursive call to <code>nth(n-1)</code>, producing a <code>Task&lt;T&gt;</code>; <code>await</code> that to get a <code>T</code>; and return it through the <code>async</code> to get a <code>Task&lt;T&gt;</code> on the way out.</p>
+<p>On the other branch of <code>nth</code>, The new <code>rest</code> will walk up the lazy list just as before, only awaiting the value of <code>rest().nth(n-1)</code> to get a <code>T</code>; and returning it through the <code>async</code> to get a <code>Task&lt;T&gt;</code> on the way out (EDIT: thanks to Brian Grunkmeyer for a bug fix here).</p>
 
-<p>On both branches, <code>nth</code> is of type <code>Task&lt;T&gt;</code>, just what we need to <code>await</code> on in the caller to get <code>T</code>&#8217;s.</p>
+<p>On both branches, <code>nth</code> is of type <code>Task&lt;T&gt;</code>, just what we need to <code>await</code> on in the caller to get <code>T</code>’s. </p>
 
-<p>Here is the more meaty async factorial, which doesn&#8217;t differ in any interesting way from the lazy-list factorial:</p>
+<p>Here is the more meaty async factorial, which doesn’t differ in any interesting way from the lazy-list factorial:</p>
 
-<figure class='code'><figcaption><span>asyncFactorial</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="n">AsyncList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span> <span class="n">asyncFactorials</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
-</span><span class='line'><span class="p">{</span>   <span class="k">return</span> <span class="k">new</span> <span class="n">AsyncList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span>
-</span><span class='line'>    <span class="p">{</span>   <span class="k">value</span> <span class="p">=</span> <span class="p">(</span><span class="n">n</span> <span class="p">&lt;=</span> <span class="m">1</span><span class="p">)</span> <span class="p">?</span> <span class="m">1</span> <span class="p">:</span> <span class="n">n</span> <span class="p">*</span> <span class="n">asyncFactorials</span><span class="p">(</span><span class="n">n</span> <span class="p">-</span> <span class="m">1</span><span class="p">).</span><span class="k">value</span><span class="p">,</span>
-</span><span class='line'>        <span class="n">rest</span> <span class="p">=</span> <span class="p">()</span> <span class="p">=&gt;</span>
-</span><span class='line'>        <span class="p">{</span>   <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;AsyncFactorials, rest: &quot;</span><span class="p">);</span>
-</span><span class='line'>            <span class="n">Thread</span><span class="p">.</span><span class="n">Sleep</span><span class="p">(</span><span class="n">ran</span><span class="p">.</span><span class="n">Next</span><span class="p">(</span><span class="m">200</span><span class="p">));</span>
-</span><span class='line'>            <span class="k">return</span> <span class="nf">asyncFactorials</span><span class="p">(</span><span class="n">n</span> <span class="p">+</span> <span class="m">1</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">};</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span>asyncFactorial</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+</pre></td><td class="code"><pre><code class="csharp"><span class="line"><span class="k">public</span> <span class="k">static</span> <span class="n">AsyncList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span> <span class="n">asyncFactorials</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
+</span><span class="line"><span class="p">{</span>   <span class="k">return</span> <span class="k">new</span> <span class="n">AsyncList</span><span class="p">&lt;</span><span class="kt">int</span><span class="p">&gt;</span>
+</span><span class="line">    <span class="p">{</span>   <span class="k">value</span> <span class="p">=</span> <span class="p">(</span><span class="n">n</span> <span class="p">&lt;=</span> <span class="m">1</span><span class="p">)</span> <span class="p">?</span> <span class="m">1</span> <span class="p">:</span> <span class="n">n</span> <span class="p">*</span> <span class="n">asyncFactorials</span><span class="p">(</span><span class="n">n</span> <span class="p">-</span> <span class="m">1</span><span class="p">).</span><span class="k">value</span><span class="p">,</span>
+</span><span class="line">        <span class="n">rest</span> <span class="p">=</span> <span class="p">()</span> <span class="p">=&gt;</span>
+</span><span class="line">        <span class="p">{</span>   <span class="n">DumpThreadId</span><span class="p">(</span><span class="s">&quot;AsyncFactorials, rest: &quot;</span><span class="p">);</span>
+</span><span class="line">            <span class="n">Thread</span><span class="p">.</span><span class="n">Sleep</span><span class="p">(</span><span class="n">ran</span><span class="p">.</span><span class="n">Next</span><span class="p">(</span><span class="m">200</span><span class="p">));</span>
+</span><span class="line">            <span class="k">return</span> <span class="nf">asyncFactorials</span><span class="p">(</span><span class="n">n</span> <span class="p">+</span> <span class="m">1</span><span class="p">);</span>
+</span><span class="line">        <span class="p">}</span>
+</span><span class="line">    <span class="p">};</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
+<p>It may take a few tries to get a lot of thread variety: the thread-pool scheduler seems to have hints from your code and tries to reuse the same thread whenever it can.  But eventually, you can get a trace like the following that shows various thread moving around these tasks. </p>
 
-<p>It may take a few tries to get a lot of thread variety: the thread-pool scheduler seems to have hints from your code and tries to reuse the same thread whenever it can.  But eventually, you can get a trace like the following that shows various thread moving around these tasks.</p>
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span>asyncFactorial</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+<span class="line-number">22</span>
+<span class="line-number">23</span>
+<span class="line-number">24</span>
+<span class="line-number">25</span>
+<span class="line-number">26</span>
+<span class="line-number">27</span>
+<span class="line-number">28</span>
+<span class="line-number">29</span>
+<span class="line-number">30</span>
+<span class="line-number">31</span>
+<span class="line-number">32</span>
+<span class="line-number">33</span>
+<span class="line-number">34</span>
+<span class="line-number">35</span>
+<span class="line-number">36</span>
+<span class="line-number">37</span>
+<span class="line-number">38</span>
+<span class="line-number">39</span>
+<span class="line-number">40</span>
+<span class="line-number">41</span>
+<span class="line-number">42</span>
+<span class="line-number">43</span>
+<span class="line-number">44</span>
+<span class="line-number">45</span>
+</pre></td><td class="code"><pre><code class="csharp"><span class="line"><span class="m">5</span>
+</span><span class="line"><span class="m">120</span>
+</span><span class="line"><span class="n">Async</span> <span class="n">main</span><span class="p">,</span> <span class="n">k3</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class="line"><span class="m">16</span>
+</span><span class="line">
+</span><span class="line"><span class="n">AsyncIntegers</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class="line"><span class="m">22</span>
+</span><span class="line">
+</span><span class="line"><span class="n">AsyncIntegers</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class="line"><span class="m">37</span>
+</span><span class="line">
+</span><span class="line"><span class="n">AsyncIntegers</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class="line"><span class="m">37</span>
+</span><span class="line">
+</span><span class="line"><span class="n">AsyncIntegers</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class="line"><span class="m">37</span>
+</span><span class="line">
+</span><span class="line"><span class="n">AsyncList</span><span class="p">,</span> <span class="n">nth</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class="line"><span class="m">37</span>
+</span><span class="line">
+</span><span class="line"><span class="m">5</span>
+</span><span class="line"><span class="n">Async</span> <span class="n">main</span><span class="p">,</span> <span class="n">k4</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class="line"><span class="m">37</span>
+</span><span class="line">
+</span><span class="line"><span class="n">AsyncFactorials</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class="line"><span class="m">37</span>
+</span><span class="line">
+</span><span class="line"><span class="n">AsyncFactorials</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class="line"><span class="m">37</span>
+</span><span class="line">
+</span><span class="line"><span class="n">AsyncFactorials</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class="line"><span class="m">37</span>
+</span><span class="line">
+</span><span class="line"><span class="n">AsyncFactorials</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class="line"><span class="m">37</span>
+</span><span class="line">
+</span><span class="line"><span class="n">AsyncList</span><span class="p">,</span> <span class="n">nth</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class="line"><span class="m">26</span>
+</span><span class="line">
+</span><span class="line"><span class="m">120</span>
+</span><span class="line"><span class="n">Anonymous</span> <span class="n">task</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class="line"><span class="m">37</span>
+</span><span class="line">
+</span><span class="line"><span class="n">Async</span> <span class="n">main</span><span class="p">,</span> <span class="n">z0</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
+</span><span class="line"><span class="m">37</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<figure class='code'><figcaption><span>asyncFactorial</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-</pre></td><td class='code'><pre><code class='csharp'><span class='line'><span class="m">5</span>
-</span><span class='line'><span class="m">120</span>
-</span><span class='line'><span class="n">Async</span> <span class="n">main</span><span class="p">,</span> <span class="n">k3</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
-</span><span class='line'><span class="m">16</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">AsyncIntegers</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
-</span><span class='line'><span class="m">22</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">AsyncIntegers</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
-</span><span class='line'><span class="m">37</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">AsyncIntegers</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
-</span><span class='line'><span class="m">37</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">AsyncIntegers</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
-</span><span class='line'><span class="m">37</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">AsyncList</span><span class="p">,</span> <span class="n">nth</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
-</span><span class='line'><span class="m">37</span>
-</span><span class='line'>
-</span><span class='line'><span class="m">5</span>
-</span><span class='line'><span class="n">Async</span> <span class="n">main</span><span class="p">,</span> <span class="n">k4</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
-</span><span class='line'><span class="m">37</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">AsyncFactorials</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
-</span><span class='line'><span class="m">37</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">AsyncFactorials</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
-</span><span class='line'><span class="m">37</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">AsyncFactorials</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
-</span><span class='line'><span class="m">37</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">AsyncFactorials</span><span class="p">,</span> <span class="n">rest</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
-</span><span class='line'><span class="m">37</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">AsyncList</span><span class="p">,</span> <span class="n">nth</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
-</span><span class='line'><span class="m">26</span>
-</span><span class='line'>
-</span><span class='line'><span class="m">120</span>
-</span><span class='line'><span class="n">Anonymous</span> <span class="n">task</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
-</span><span class='line'><span class="m">37</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">Async</span> <span class="n">main</span><span class="p">,</span> <span class="n">z0</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">Id</span>
-</span><span class='line'><span class="m">37</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>A gist for this LINQPad script can be found here: <a href="https://gist.github.com/4580491">https://gist.github.com/4580491</a>.</p>
+<p>A gist for this LINQPad script can be found here: <a href="https://gist.github.com/4580491">https://gist.github.com/4580491</a>.  </p>
 ]]></content>
   </entry>
   
@@ -387,84 +377,78 @@ a task, via the following static method:</p>
     <link href="http://rebcabin.github.com/blog/2012/12/13/fast-arbitrary-non-uniform-randoms/"/>
     <updated>2012-12-13T08:28:00-08:00</updated>
     <id>http://rebcabin.github.com/blog/2012/12/13/fast-arbitrary-non-uniform-randoms</id>
-    <content type="html"><![CDATA[<p>You give me an array of integers representing the distribution of outcomes of some discrete random process (translation: you give me the specification of a loaded die: &#8220;I want 1 to come up 7/39 of the time; 2 to come up 5/39 of the time; I&#8217;d better NEVER see a 3 &#8216;cause I&#8217;m betting the farm on that; 4 to come up 11/39 of the time; 5 to come up 3/39 of the time; and 6 to come up 13/39 of the time.&#8221;).  You also give me a uniform pseudo-random number generator (PRNG) like Mathematica&#8217;s <a href="http://reference.wolfram.com/mathematica/ref/RandomInteger.html?q=RandomInteger&amp;lang=en">Random Integer</a>.  I give you back a new PRNG that honors the distribution you gave me, in the sense that, statistically, it generates outcomes with the same distribution as you gave me.</p>
+    <content type="html"><![CDATA[<p>You give me an array of integers representing the distribution of outcomes of some discrete random process (translation: you give me the specification of a loaded die: “I want 1 to come up 7/39 of the time; 2 to come up 5/39 of the time; I’d better NEVER see a 3 ‘cause I’m betting the farm on that; 4 to come up 11/39 of the time; 5 to come up 3/39 of the time; and 6 to come up 13/39 of the time.”).  You also give me a uniform pseudo-random number generator (PRNG) like Mathematica’s <a href="http://reference.wolfram.com/mathematica/ref/RandomInteger.html?q=RandomInteger&amp;lang=en">Random Integer</a>.  I give you back a new PRNG that honors the distribution you gave me, in the sense that, statistically, it generates outcomes with the same distribution as you gave me.</p>
 
-<p>The problem is a practical, real-world problem.  Any time you need to generate random numbers according to some arbitrary, given distribution such as in simulation, traversing a Bayesian network, a decision tree, a packet retry backoff schedule, you name it, the problem comes up.  In my work, it comes up every time I need to generate random expressions for testing parsers or for Monte-Carlo search for formulas.  Most of the time, you want to generate expressions non-uniformly.  For instance, you&#8217;d like to generate addition expressions more frequently than division expressions or function calls more frequently than function definitions.</p>
+<p>The problem is a practical, real-world problem.  Any time you need to generate random numbers according to some arbitrary, given distribution such as in simulation, traversing a Bayesian network, a decision tree, a packet retry backoff schedule, you name it, the problem comes up.  In my work, it comes up every time I need to generate random expressions for testing parsers or for Monte-Carlo search for formulas.  Most of the time, you want to generate expressions non-uniformly.  For instance, you’d like to generate addition expressions more frequently than division expressions or function calls more frequently than function definitions.  </p>
 
 <p>There are a lot of solutions to this problem.  Probability mavens will immediately see that the problem boils down to <a href="http://en.wikipedia.org/wiki/Inverse_transform_sampling">inverting the CDF</a>.  We can do this by:</p>
 
 <ul>
-<li>linear search &#8211; O(N) space, O(N) time, where N is the number of different outcomes &#8211; the number of elements in the original array &#8211; the number of sides on the loaded die &#8211; 6 in our example</li>
-<li>binary search &#8211; O(N) space, O(log(N)) time &#8211; this works because the CDF is monotonically increasing</li>
-<li>by constructing an explicit inverse in an array &#8211; O(S) space, O(1) time, where S is the sum of the numbers in the array &#8211; the total number of trials imputed in the original distribution &#8211; 39 in our example</li>
-<li>by my favorite method: <a href="http://code.activestate.com/recipes/576564-walkers-alias-method-for-random-objects-with-diffe/">Walker&#8217;s method of aliases</a> &#8211; O(N) space and O(1) time.</li>
+  <li>linear search – O(N) space, O(N) time, where N is the number of different outcomes – the number of elements in the original array – the number of sides on the loaded die – 6 in our example</li>
+  <li>binary search – O(N) space, O(log(N)) time – this works because the CDF is monotonically increasing</li>
+  <li>by constructing an explicit inverse in an array – O(S) space, O(1) time, where S is the sum of the numbers in the array – the total number of trials imputed in the original distribution – 39 in our example </li>
+  <li>by my favorite method: <a href="http://code.activestate.com/recipes/576564-walkers-alias-method-for-random-objects-with-diffe/">Walker’s method of aliases</a> – O(N) space and O(1) time.</li>
 </ul>
-
 
 <p>At first glance, this seems ridiculous, but there is a way.  In a nutshell: paint a dartboard with colors in the given proportions, throw darts, lookup the colors (thanks to Terence Spies for this beautiful idea).</p>
 
 <p>Less metaphorically: imagine that the counts are colored balls distributed in bins:</p>
 
 <ol>
-<li>7 balls of color number 1 in bin number 1</li>
-<li>5 balls of color number 2 in bin number 2</li>
-<li>0 balls of color number 3 in bin number 3</li>
-<li>11 balls of color number 4 in bin number 4</li>
-<li>3 balls of color number 5 in bin number 5</li>
-<li>13 balls of color number six in bin number 6</li>
+  <li>7 balls of color number 1 in bin number 1</li>
+  <li>5 balls of color number 2 in bin number 2</li>
+  <li>0 balls of color number 3 in bin number 3</li>
+  <li>11 balls of color number 4 in bin number 4</li>
+  <li>3 balls of color number 5 in bin number 5</li>
+  <li>13 balls of color number six in bin number 6</li>
 </ol>
 
-
-<p>Scale up the given counts of balls until the total is divisible by N &#8211; multiply every count by D/S where D=lcm(N,S)=lcm(6,39)=78: D/S=2</p>
+<p>Scale up the given counts of balls until the total is divisible by N – multiply every count by D/S where D=lcm(N,S)=lcm(6,39)=78: D/S=2</p>
 
 <p>Now we have</p>
 
 <ol>
-<li>14 balls of color number 1 in bin number 1</li>
-<li>10 balls of color number 2 in bin number 2</li>
-<li>0 balls of color number 3 in bin number 3</li>
-<li>22 balls of color number 4 in bin number 4</li>
-<li>6 balls of color number 5 in bin number 5</li>
-<li>26 balls of color number six in bin number 6</li>
+  <li>14 balls of color number 1 in bin number 1</li>
+  <li>10 balls of color number 2 in bin number 2</li>
+  <li>0 balls of color number 3 in bin number 3</li>
+  <li>22 balls of color number 4 in bin number 4</li>
+  <li>6 balls of color number 5 in bin number 5</li>
+  <li>26 balls of color number six in bin number 6</li>
 </ol>
-
 
 <p>Redistribute the counts amongst the bins so that every bin contains the same number of counts, namely D/N=13, and that the following conditions obtain:</p>
 
 <ul>
-<li>every new bin contains at most 2 colors</li>
-<li>you never take ALL the balls out of any bin &#8211; every bin contains at least one ball of its original color if it had any</li>
+  <li>every new bin contains at most 2 colors</li>
+  <li>you never take ALL the balls out of any bin – every bin contains at least one ball of its original color if it had any</li>
 </ul>
 
-
-<p>There is a very elegant algorithm for this redistribution process.  It&#8217;s a one-liner whose statement is a proof of its correctness.  Think a minute, if you like, to see if you can come up with it, but here it is:</p>
+<p>There is a very elegant algorithm for this redistribution process.  It’s a one-liner whose statement is a proof of its correctness.  Think a minute, if you like, to see if you can come up with it, but here it is:</p>
 
 <p>Fill up the shortest bin from the tallest bin; remove the new filled bin from the game and continue.</p>
 
 <p>Do this procedure on a piece of paper:</p>
 
 <ol>
-<li>Take 13 balls from bin 6 leaving 13 balls; fill up and remove bin 3</li>
-<li>Take 7 balls from bin 4 leaving 15 balls; fill up and remove bin 5</li>
-<li>Take 3 balls from bin 4 leaving 12 balls; fill up and remove bin 2</li>
-<li>Take 1 ball from bin 1 leaving 13 balls; fill up and remove bin 4</li>
-<li>Bins 1 and 6 are left with 13 balls each; we&#8217;re done (mechanically, you can imagine taking 0 balls from bin 6, filling up bin 1; removing bin 1, leaving just one bin &#8211; bin 6).</li>
+  <li>Take 13 balls from bin 6 leaving 13 balls; fill up and remove bin 3</li>
+  <li>Take 7 balls from bin 4 leaving 15 balls; fill up and remove bin 5</li>
+  <li>Take 3 balls from bin 4 leaving 12 balls; fill up and remove bin 2</li>
+  <li>Take 1 ball from bin 1 leaving 13 balls; fill up and remove bin 4</li>
+  <li>Bins 1 and 6 are left with 13 balls each; we’re done (mechanically, you can imagine taking 0 balls from bin 6, filling up bin 1; removing bin 1, leaving just one bin – bin 6).</li>
 </ol>
 
-
-<p>you should end up with</p>
+<p>you should end up with </p>
 
 <ol>
-<li>13 balls of color 1 in bin 1 and no balls of any foreign color</li>
-<li>10 balls of color 2 and 3 balls of color 4 in bin 2</li>
-<li>0 balls of color 3 and 13 balls of color 6 in bin 3</li>
-<li>12 balls of color 4 and 1 balls of color 1 in bin 4</li>
-<li>6 balls of color 5 and 7 balls of color 4 in bin 5</li>
-<li>13 balls of color 6 in bin 6 and no balls of any foreign color</li>
+  <li>13 balls of color 1 in bin 1 and no balls of any foreign color</li>
+  <li>10 balls of color 2 and 3 balls of color 4 in bin 2</li>
+  <li>0 balls of color 3 and 13 balls of color 6 in bin 3</li>
+  <li>12 balls of color 4 and 1 balls of color 1 in bin 4</li>
+  <li>6 balls of color 5 and 7 balls of color 4 in bin 5</li>
+  <li>13 balls of color 6 in bin 6 and no balls of any foreign color</li>
 </ol>
 
-
-<p>Now, to generate new randoms, roll once to choose a bin <code>RandomInteger[{1,N}]</code>, and roll again to choose a height <code>RandomInteger[{1,D/N}]</code>.  If the randomly chosen height is less than or equal to the number of balls of the home color, return the number of the home color; otherwise, return the number of the foreign color.</p>
+<p>Now, to generate new randoms, roll once to choose a bin <code>RandomInteger[{1,N}]</code>, and roll again to choose a height <code>RandomInteger[{1,D/N}]</code>.  If the randomly chosen height is less than or equal to the number of balls of the home color, return the number of the home color; otherwise, return the number of the foreign color. </p>
 
 <p>Nifty, eh?  Here is a Mathematica notebook with an implementation tuned for clarity: <a href="https://dl.dropbox.com/u/1997638/FastNonUniformPseudoRandoms.cdf">https://dl.dropbox.com/u/1997638/FastNonUniformPseudoRandoms.cdf</a></p>
 ]]></content>
@@ -475,514 +459,492 @@ a task, via the following static method:</p>
     <link href="http://rebcabin.github.com/blog/2012/12/08/anonymous-memoizing-lazy-lists/"/>
     <updated>2012-12-08T20:41:00-08:00</updated>
     <id>http://rebcabin.github.com/blog/2012/12/08/anonymous-memoizing-lazy-lists</id>
-    <content type="html"><![CDATA[<p>A vastly prettier version of this blog can be found
-in the CDF file here: <a href="https://dl.dropbox.com/u/1997638/LazyLambda003.cdf">https://dl.dropbox.com/u/1997638/LazyLambda003.cdf</a>. Wolfram&#8217;s free CDF reader is found at <a href="http://www.wolfram.com/cdf-player/">http://www.wolfram.com/cdf-player/</a>.</p>
+    <content type="html"><![CDATA[<p>A vastly prettier version of this blog can be found 
+in the CDF file here: <a href="https://dl.dropbox.com/u/1997638/LazyLambda003.cdf">https://dl.dropbox.com/u/1997638/LazyLambda003.cdf</a>. Wolfram’s free CDF reader is found at <a href="http://www.wolfram.com/cdf-player/">http://www.wolfram.com/cdf-player/</a>.</p>
 
-<p>One reason to care about anonymized computations is that naming things costs memory, and it&#8217;s the kind of memory that lasts from one computation to another &#8211; session memory. Naming things means writing definitions and storing them in tables for access in later computations. Building up big memoization tables as definitions can cost a LOT of memory. We can save this cost if we can avoid naming things, storing information in function parameters that only last the lifetime of a single computation.</p>
+<p>One reason to care about anonymized computations is that naming things costs memory, and it’s the kind of memory that lasts from one computation to another – session memory. Naming things means writing definitions and storing them in tables for access in later computations. Building up big memoization tables as definitions can cost a LOT of memory. We can save this cost if we can avoid naming things, storing information in function parameters that only last the lifetime of a single computation.</p>
 
-<h2>NON-ANONYMOUS LAZY LISTS</h2>
+<h2 id="non-anonymous-lazy-lists">NON-ANONYMOUS LAZY LISTS</h2>
 
 <p>Lazy lists are a handy way of expressing infinite data streams. A typical lazy list might look like the following:</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[1]:= integersFrom[n_] := {n, integersFrom[n + 1] &}</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[1]:= integersFrom[n_] := {n, integersFrom[n + 1] &amp;}</span></code></pre></td></tr></table></div></figure></notextile></div>
 
+<p>Calling <code>integersFrom</code> with some numerical argument produces a list in curly braces, the first element of which is that numerical argument and the second element of which is a delayed list in the form of a nullary function – a function of no parameters. That’s what the <code>&amp;</code> means: “the expression to my left is a function.” We’re doing Lisp-style lists, which are pairs of values and lists.</p>
 
-<p>Calling <code>integersFrom</code> with some numerical argument produces a list in curly braces, the first element of which is that numerical argument and the second element of which is a delayed list in the form of a nullary function &#8211; a function of no parameters. That&#8217;s what the <code>&amp;</code> means: &#8220;the expression to my left is a function.&#8221; We&#8217;re doing Lisp-style lists, which are pairs of values and lists.</p>
-
-<p>The list in the second slot of the lazy list won&#8217;t be automatically evaluated &#8211; we must manually invoke the function that produces it when we want the results. That is the essence of lazy computation. Lazy languages like Haskell can decide when you need the results and just sidestep the explicit wrapping in a nullary function and the manual invocation. With eager or strict languages like Mathematica, we must do the invocations manually. But that&#8217;s good, because we can see more clearly what&#8217;s going on.</p>
+<p>The list in the second slot of the lazy list won’t be automatically evaluated – we must manually invoke the function that produces it when we want the results. That is the essence of lazy computation. Lazy languages like Haskell can decide when you need the results and just sidestep the explicit wrapping in a nullary function and the manual invocation. With eager or strict languages like Mathematica, we must do the invocations manually. But that’s good, because we can see more clearly what’s going on. </p>
 
 <p>In our lazy lists, the second item will always be a nullary function.</p>
 
-<p>Start peeling integers off such a structure one at a time. <code>integersFrom[0]</code> will be a lazy list of integers starting from 0, and
+<p>Start peeling integers off such a structure one at a time. <code>integersFrom[0]</code> will be a lazy list of integers starting from 0, and 
 <code>[[1]]</code> will pick the first element from the resulting list:</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[2]:= integersFrom[0][[1]]
-</span><span class='line'>Out[2]= 0</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[2]:= integersFrom[0][[1]]
+</span><span class="line">Out[2]= 0</span></code></pre></td></tr></table></div></figure></notextile></div>
 
+<p>If we pick the second element from <code>integersFrom[0]</code>, that will be a nullary function that produces the next lazy list. Manually invoke the function by appending <code>[]</code> – invocation brackets containing no arguments – and then pick off the first element of the result to get the next integer.</p>
 
-<p>If we pick the second element from <code>integersFrom[0]</code>, that will be a nullary function that produces the next lazy list. Manually invoke the function by appending <code>[]</code> &#8211; invocation brackets containing no arguments &#8211; and then pick off the first element of the result to get the next integer.</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[3]:= integersFrom[0][[2]][][[1]]
-</span><span class='line'>Out[3]= 1</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[3]:= integersFrom[0][[2]][][[1]]
+</span><span class="line">Out[3]= 1</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>And so on:</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[4]:= integersFrom[0][[2]][][[2]][][[1]]
-</span><span class='line'>Out[4]= 2</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[4]:= integersFrom[0][[2]][][[2]][][[1]]
+</span><span class="line">Out[4]= 2</span></code></pre></td></tr></table></div></figure></notextile></div>
 
+<p>A pattern emerges that we can capture in some operators. <code>Value</code> just picks the first element of a lazy list, and <code>next</code> picks the second element – the nullary function – and invokes it on no arguments:</p>
 
-<p>A pattern emerges that we can capture in some operators. <code>Value</code> just picks the first element of a lazy list, and <code>next</code> picks the second element &#8211; the nullary function &#8211; and invokes it on no arguments:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[5]:= value[stream_] := stream[[1]];
-</span><span class='line'>next[stream_] := stream[[2]][];
-</span><span class='line'>
-</span><span class='line'>In[7]:= value@integersFrom[0]
-</span><span class='line'>Out[7]= 0
-</span><span class='line'>
-</span><span class='line'>In[8]:= value@next@integersFrom[0]
-</span><span class='line'>Out[8]= 1
-</span><span class='line'>
-</span><span class='line'>In[9]:= value@next@next@integersFrom[0]
-</span><span class='line'>Out[9]= 2</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[5]:= value[stream_] := stream[[1]];
+</span><span class="line">next[stream_] := stream[[2]][];
+</span><span class="line">
+</span><span class="line">In[7]:= value@integersFrom[0]
+</span><span class="line">Out[7]= 0
+</span><span class="line">
+</span><span class="line">In[8]:= value@next@integersFrom[0]
+</span><span class="line">Out[8]= 1
+</span><span class="line">
+</span><span class="line">In[9]:= value@next@next@integersFrom[0]
+</span><span class="line">Out[9]= 2</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Improve the <code>value</code> operator so we can ask for the <code>n</code> th value, recursively:</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[10]:= ClearAll[value];
-</span><span class='line'>value[stream_, n_: 1] :=
-</span><span class='line'> If[n &lt;= 1,
-</span><span class='line'>  stream[[1]],
-</span><span class='line'>  value[next[stream], n - 1]]
-</span><span class='line'>
-</span><span class='line'>In[12]:= value[integersFrom[1], 26]
-</span><span class='line'>Out[12]= 26</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[10]:= ClearAll[value];
+</span><span class="line">value[stream_, n_: 1] :=
+</span><span class="line"> If[n &lt;= 1,
+</span><span class="line">  stream[[1]],
+</span><span class="line">  value[next[stream], n - 1]]
+</span><span class="line">
+</span><span class="line">In[12]:= value[integersFrom[1], 26]
+</span><span class="line">Out[12]= 26</span></code></pre></td></tr></table></div></figure></notextile></div>
 
+<p>Let’s see a few values by mapping over a list of inputs:</p>
 
-<p>Let&#8217;s see a few values by mapping over a list of inputs:</p>
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[13]:= value[integersFrom[1], #] &amp; /@ {1, 2, 3, 4, 5, 10, 15, 20}
+</span><span class="line">Out[13]= {1, 2, 3, 4, 5, 10, 15, 20}</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[13]:= value[integersFrom[1], #] & /@ {1, 2, 3, 4, 5, 10, 15, 20}
-</span><span class='line'>Out[13]= {1, 2, 3, 4, 5, 10, 15, 20}</span></code></pre></td></tr></table></div></figure>
+<p>We don’t need <code>next</code> any more – only <code>value</code> used it. Inline it in the body of <code>value</code>:</p>
 
-
-<p>We don&#8217;t need <code>next</code> any more &#8211; only <code>value</code> used it. Inline it in the body of <code>value</code>:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[14]:= ClearAll[next, value];
-</span><span class='line'>value[stream_, n_: 1] :=
-</span><span class='line'>  If[n &lt;= 1,
-</span><span class='line'>   stream[[1]],
-</span><span class='line'>   value[stream[[2]][], n - 1]];</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[14]:= ClearAll[next, value];
+</span><span class="line">value[stream_, n_: 1] :=
+</span><span class="line">  If[n &lt;= 1,
+</span><span class="line">   stream[[1]],
+</span><span class="line">   value[stream[[2]][], n - 1]];</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>As an aside, an efficient implementation of <code>value</code> requires either the tail-recursion optimization in the interpreter or a re-expression in iterative form, which can be done semi-automatically.</p>
 
 <p>Write another lazy list as follows:</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[16]:= ClearAll[fibonaccis];
-</span><span class='line'>fibonaccis[n_] :=
-</span><span class='line'> {If[n &lt;= 1,
-</span><span class='line'>   1,
-</span><span class='line'>   value[fibonaccis[n - 1]] + value[fibonaccis[n - 2]]],
-</span><span class='line'>  fibonaccis[n + 1] &
-</span><span class='line'>  }
-</span><span class='line'>
-</span><span class='line'>In[18]:= Timing[value[fibonaccis[1], 15]]
-</span><span class='line'>Out[18]= {0.024130, 987}</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[16]:= ClearAll[fibonaccis];
+</span><span class="line">fibonaccis[n_] :=
+</span><span class="line"> {If[n &lt;= 1,
+</span><span class="line">   1,
+</span><span class="line">   value[fibonaccis[n - 1]] + value[fibonaccis[n - 2]]],
+</span><span class="line">  fibonaccis[n + 1] &amp;
+</span><span class="line">  }
+</span><span class="line">
+</span><span class="line">In[18]:= Timing[value[fibonaccis[1], 15]]
+</span><span class="line">Out[18]= {0.024130, 987}</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Of course, this is exponentially inefficient, as are all non-memoizing recursive fibonaccis. Fib of 15 is already painful, and fib of 150 is unthinkable. This can be mitigated as follows:</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[19]:= ClearAll[fibonaccis];
-</span><span class='line'>fibonaccis[n_] :=
-</span><span class='line'> fibonaccis[n] =
-</span><span class='line'>  {If[n &lt;= 1,
-</span><span class='line'>    1,
-</span><span class='line'>    value[fibonaccis[n - 1]] + value[fibonaccis[n - 2]]],
-</span><span class='line'>   fibonaccis[n + 1] &
-</span><span class='line'>   }
-</span><span class='line'>
-</span><span class='line'>In[21]:= fibonaccis[#] & /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}
-</span><span class='line'>Out[21]= {{1, fibonaccis[1 + 1] &}, {2, fibonaccis[2 + 1] &}, {3, 
-</span><span class='line'>  fibonaccis[3 + 1] &}, {5, fibonaccis[4 + 1] &}, {8, 
-</span><span class='line'>  fibonaccis[5 + 1] &}, {13, fibonaccis[6 + 1] &}, {21, 
-</span><span class='line'>  fibonaccis[7 + 1] &}, {34, fibonaccis[8 + 1] &}, {55, 
-</span><span class='line'>  fibonaccis[9 + 1] &}, {89, fibonaccis[10 + 1] &}, {987, 
-</span><span class='line'>  fibonaccis[15 + 1] &}, {10946, fibonaccis[20 + 1] &}}
-</span><span class='line'>
-</span><span class='line'>In[22]:= Timing[value[fibonaccis[1], 150]]
-</span><span class='line'>Out[22]= {0.001997, 16130531424904581415797907386349}</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[19]:= ClearAll[fibonaccis];
+</span><span class="line">fibonaccis[n_] :=
+</span><span class="line"> fibonaccis[n] =
+</span><span class="line">  {If[n &lt;= 1,
+</span><span class="line">    1,
+</span><span class="line">    value[fibonaccis[n - 1]] + value[fibonaccis[n - 2]]],
+</span><span class="line">   fibonaccis[n + 1] &amp;
+</span><span class="line">   }
+</span><span class="line">
+</span><span class="line">In[21]:= fibonaccis[#] &amp; /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}
+</span><span class="line">Out[21]= {{1, fibonaccis[1 + 1] &amp;}, {2, fibonaccis[2 + 1] &amp;}, {3, 
+</span><span class="line">  fibonaccis[3 + 1] &amp;}, {5, fibonaccis[4 + 1] &amp;}, {8, 
+</span><span class="line">  fibonaccis[5 + 1] &amp;}, {13, fibonaccis[6 + 1] &amp;}, {21, 
+</span><span class="line">  fibonaccis[7 + 1] &amp;}, {34, fibonaccis[8 + 1] &amp;}, {55, 
+</span><span class="line">  fibonaccis[9 + 1] &amp;}, {89, fibonaccis[10 + 1] &amp;}, {987, 
+</span><span class="line">  fibonaccis[15 + 1] &amp;}, {10946, fibonaccis[20 + 1] &amp;}}
+</span><span class="line">
+</span><span class="line">In[22]:= Timing[value[fibonaccis[1], 150]]
+</span><span class="line">Out[22]= {0.001997, 16130531424904581415797907386349}</span></code></pre></td></tr></table></div></figure></notextile></div>
 
+<p>This is a well-known Mathematica idiom for building a memo table by side effect. The memo table consists of explicit, specific point-values for <code>fibonaccis</code>, which the general <code>fibonaccis</code> – the one depending on a single parameter <code>n_</code> – creates on-the-fly. Subsequent references to <code>fibonaccis</code>` at known inputs will do a quick lookup on the specific values and avoid the exponential recomputation. </p>
 
-<p>This is a well-known Mathematica idiom for building a memo table by side effect. The memo table consists of explicit, specific point-values for <code>fibonaccis</code>, which the general <code>fibonaccis</code> &#8211; the one depending on a single parameter <code>n_</code> &#8211; creates on-the-fly. Subsequent references to `fibonaccis&#8220; at known inputs will do a quick lookup on the specific values and avoid the exponential recomputation.</p>
+<p>This is non-anonymous programming on steroids – everything is built up inside the named object <code>fibonaccis</code>, but it gives us great speed at the expense of memory. But this is global memory in Mathematica’s global brain. When we’re done with the calculation, we have modified the session state of Mathematica and not left things the way we found them. In some scenarios, this would not be allowed. We must find some other way to evaluate recursive formulas without requiring session state – using only ephemeral memory such as stack frames that go away when our result is achieved.</p>
 
-<p>This is non-anonymous programming on steroids &#8211; everything is built up inside the named object <code>fibonaccis</code>, but it gives us great speed at the expense of memory. But this is global memory in Mathematica&#8217;s global brain. When we&#8217;re done with the calculation, we have modified the session state of Mathematica and not left things the way we found them. In some scenarios, this would not be allowed. We must find some other way to evaluate recursive formulas without requiring session state &#8211; using only ephemeral memory such as stack frames that go away when our result is achieved.</p>
+<p>Let’s get rid of the named functions and then even get rid of the named memo table so we can have decent performance on our recursive evaluations.</p>
 
-<p>Let&#8217;s get rid of the named functions and then even get rid of the named memo table so we can have decent performance on our recursive evaluations.</p>
-
-<h2>ANONYMIZE</h2>
+<h2 id="anonymize">ANONYMIZE</h2>
 
 <p>The mother of all anonymizers is the Y combinator:</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[23]:= Y = (subjectCode \[Function] (g \[Function] g@g)
-</span><span class='line'>     [precursor \[Function] subjectCode
-</span><span class='line'>       [n \[Function] precursor[precursor][n]]]);</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[23]:= Y = (subjectCode \[Function] (g \[Function] g@g)
+</span><span class="line">     [precursor \[Function] subjectCode
+</span><span class="line">       [n \[Function] precursor[precursor][n]]]);</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Without going into how it works, Y is a function that takes another function as an argument. That other function takes an argument <code>k</code> and produces a function of <code>n</code>. The function of <code>n</code> can call <code>k</code> as if <code>k</code> were a recursive definition of the function of <code>n</code>. The function of <code>n</code> can be applied to workhorse arguments, that is, to arguments of the subject code.</p>
 
-<p>In practice, Y is easy to use: just apply it to a function of <code>k</code> that produces a function of <code>n</code> that internally calls <code>k</code>, then apply the result to the desired <code>n</code>.</p>
+<p>In practice, Y is easy to use: just apply it to a function of <code>k</code> that produces a function of <code>n</code> that internally calls <code>k</code>, then apply the result to the desired <code>n</code>.  </p>
 
 <p>Here is the lazy list of integers, this time starting at 1, without using the name of the lazy list inside the definition of the lazy list: s1 does not refer to s1:</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[24]:= ClearAll[s1];
-</span><span class='line'>s1 = Y[k \[Function] n \[Function]
-</span><span class='line'>      {n, k[n + 1] &}
-</span><span class='line'>    ][1];
-</span><span class='line'>
-</span><span class='line'>In[26]:= value[s1]
-</span><span class='line'>Out[26]= 1</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[24]:= ClearAll[s1];
+</span><span class="line">s1 = Y[k \[Function] n \[Function]
+</span><span class="line">      {n, k[n + 1] &amp;}
+</span><span class="line">    ][1];
+</span><span class="line">
+</span><span class="line">In[26]:= value[s1]
+</span><span class="line">Out[26]= 1</span></code></pre></td></tr></table></div></figure></notextile></div>
 
+<p>We feed to Y a function of <code>k</code>. That function of <code>k</code> produces a function of <code>n</code>. That function of <code>n</code> produces a list in curly braces. The first element of that list is the value <code>n</code>, and the second element of that list is a delayed call of <code>k</code> on the next value, <code>n+1</code>. <code>s1</code> is thus a lazy list of all the integers, just defined without reference to any names but parameters. No global storage needed, no session state. </p>
 
-<p>We feed to Y a function of <code>k</code>. That function of <code>k</code> produces a function of <code>n</code>. That function of <code>n</code> produces a list in curly braces. The first element of that list is the value <code>n</code>, and the second element of that list is a delayed call of <code>k</code> on the next value, <code>n+1</code>. <code>s1</code> is thus a lazy list of all the integers, just defined without reference to any names but parameters. No global storage needed, no session state.</p>
+<p>Let’s map calls of <code>value[s1,#]&amp;</code> over a sequence of inputs to consicely show it off multiple times:</p>
 
-<p>Let&#8217;s map calls of <code>value[s1,#]&amp;</code> over a sequence of inputs to consicely show it off multiple times:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[27]:= value[s1, #] & /@ {1, 2, 3, 4, 26}
-</span><span class='line'>Out[27]= {1, 2, 3, 4, 26}</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[27]:= value[s1, #] &amp; /@ {1, 2, 3, 4, 26}
+</span><span class="line">Out[27]= {1, 2, 3, 4, 26}</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Now, on to an anonymized lazy list of fibonaccis:</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[28]:= ClearAll[s2];
-</span><span class='line'>s2 = Y[k \[Function] n \[Function]
-</span><span class='line'>      {If[n &lt;= 1,
-</span><span class='line'>        1,
-</span><span class='line'>        value[k[n - 1]] + value[k[n - 2]]],
-</span><span class='line'>       k[n + 1] &}
-</span><span class='line'>    ][1];</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[28]:= ClearAll[s2];
+</span><span class="line">s2 = Y[k \[Function] n \[Function]
+</span><span class="line">      {If[n &lt;= 1,
+</span><span class="line">        1,
+</span><span class="line">        value[k[n - 1]] + value[k[n - 2]]],
+</span><span class="line">       k[n + 1] &amp;}
+</span><span class="line">    ][1];</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>This one is still slow:</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[30]:= Timing[value[s2, #] & /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
-</span><span class='line'>Out[30]= {0.883336, {1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 987, 10946}}</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[30]:= Timing[value[s2, #] &amp; /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
+</span><span class="line">Out[30]= {0.883336, {1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 987, 10946}}</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>It takes about a second to produce <code>fib[20]</code>, and higher values become intolerable. We would never get to an absurd input like 150.</p>
 
-<h2>MEMOIZE</h2>
+<h2 id="memoize">MEMOIZE</h2>
 
-<p>How can we speed it up without defining point values in some named object? By defining point values in an un-named object, of course! Un-named objects are best modeled in Mathematica as lists of rules, one for each point-like input. We&#8217;ll need to pass that around in the argument list of <code>k</code>, and the easiest way to do that is to make <code>n</code>, the argument of <code>k</code>, a regular Mathematica list to contain both a value and an anonymous dictionary.</p>
+<p>How can we speed it up without defining point values in some named object? By defining point values in an un-named object, of course! Un-named objects are best modeled in Mathematica as lists of rules, one for each point-like input. We’ll need to pass that around in the argument list of <code>k</code>, and the easiest way to do that is to make <code>n</code>, the argument of <code>k</code>, a regular Mathematica list to contain both a value and an anonymous dictionary. </p>
 
-<p>We&#8217;ll get to this form in a few steps. First, just change <code>n</code> so that it&#8217;s a list rather than an integer. This change spreads a lot of indexing around the body of <code>k</code>, so we want to make sure we get that right before proceeding:</p>
+<p>We’ll get to this form in a few steps. First, just change <code>n</code> so that it’s a list rather than an integer. This change spreads a lot of indexing around the body of <code>k</code>, so we want to make sure we get that right before proceeding:</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[31]:= ClearAll[s3];
-</span><span class='line'>s3 = Y[k \[Function] n \[Function]
-</span><span class='line'>      {If[n[[1]] &lt;= 1,
-</span><span class='line'>        {1},
-</span><span class='line'>        {value[k[{n[[1]] - 1}]][[1]] +
-</span><span class='line'>          value[k[{n[[1]] - 2}]][[1]]}
-</span><span class='line'>        ],
-</span><span class='line'>       k[{n[[1]] + 1}] &}
-</span><span class='line'>    ][{1}];
-</span><span class='line'>
-</span><span class='line'>In[33]:= Timing[value[s3, #] & /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
-</span><span class='line'>Out[33]= {1.145393, {{1}, {2}, {3}, {5}, {8}, {13}, {21}, {34}, {55}, {89}, {987}, \
-</span><span class='line'>{10946}}}</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[31]:= ClearAll[s3];
+</span><span class="line">s3 = Y[k \[Function] n \[Function]
+</span><span class="line">      {If[n[[1]] &lt;= 1,
+</span><span class="line">        {1},
+</span><span class="line">        {value[k[{n[[1]] - 1}]][[1]] +
+</span><span class="line">          value[k[{n[[1]] - 2}]][[1]]}
+</span><span class="line">        ],
+</span><span class="line">       k[{n[[1]] + 1}] &amp;}
+</span><span class="line">    ][{1}];
+</span><span class="line">
+</span><span class="line">In[33]:= Timing[value[s3, #] &amp; /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
+</span><span class="line">Out[33]= {1.145393, {{1}, {2}, {3}, {5}, {8}, {13}, {21}, {34}, {55}, {89}, {987}, \
+</span><span class="line">{10946}}}</span></code></pre></td></tr></table></div></figure></notextile></div>
 
+<p>Now add a second element – an empty list – to <code>n</code>, but ignore it in the code, just to make sure we get all the shaping correct. We must modify six places where arguments to k are constructed:</p>
 
-<p>Now add a second element &#8211; an empty list &#8211; to <code>n</code>, but ignore it in the code, just to make sure we get all the shaping correct. We must modify six places where arguments to k are constructed:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[34]:= ClearAll[s4];
-</span><span class='line'>s4 = Y[k \[Function] n \[Function]
-</span><span class='line'>      {If[n[[1]] &lt;= 1,
-</span><span class='line'>        {1, {}},(* 
-</span><span class='line'>        modification 1 *)
-</span><span class='line'>        {value[k[{n[[1]] - 1, {}}]][[1]] + (* 
-</span><span class='line'>          modification 2 *)
-</span><span class='line'>          value[k[{n[[1]] - 2, {}}]][[1]],
-</span><span class='line'>         (* modification 3 *)
-</span><span class='line'>         {}} (* modification 4 *)
-</span><span class='line'>        ],
-</span><span class='line'>       k[{n[[1]] + 1, {}}] &} (* 
-</span><span class='line'>    modification 5 *)
-</span><span class='line'>    ][{1, {}}]; (* modification 6 *)
-</span><span class='line'>
-</span><span class='line'>In[36]:= Timing[value[s4, #] & /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
-</span><span class='line'>Out[36]= {1.214176, {{1, {}}, {2, {}}, {3, {}}, {5, {}}, {8, {}}, {13, {}}, {21, {}}, \
-</span><span class='line'>{34, {}}, {55, {}}, {89, {}}, {987, {}}, {10946, {}}}}</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[34]:= ClearAll[s4];
+</span><span class="line">s4 = Y[k \[Function] n \[Function]
+</span><span class="line">      {If[n[[1]] &lt;= 1,
+</span><span class="line">        {1, {}},(* 
+</span><span class="line">        modification 1 *)
+</span><span class="line">        {value[k[{n[[1]] - 1, {}}]][[1]] + (* 
+</span><span class="line">          modification 2 *)
+</span><span class="line">          value[k[{n[[1]] - 2, {}}]][[1]],
+</span><span class="line">         (* modification 3 *)
+</span><span class="line">         {}} (* modification 4 *)
+</span><span class="line">        ],
+</span><span class="line">       k[{n[[1]] + 1, {}}] &amp;} (* 
+</span><span class="line">    modification 5 *)
+</span><span class="line">    ][{1, {}}]; (* modification 6 *)
+</span><span class="line">
+</span><span class="line">In[36]:= Timing[value[s4, #] &amp; /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
+</span><span class="line">Out[36]= {1.214176, {{1, {}}, {2, {}}, {3, {}}, {5, {}}, {8, {}}, {13, {}}, {21, {}}, \
+</span><span class="line">{34, {}}, {55, {}}, {89, {}}, {987, {}}, {10946, {}}}}</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Now replace the internal constant empty lists with references to the second slot of <code>n</code>, where we will eventually store the dictionary:</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[37]:= ClearAll[s5];
-</span><span class='line'>s5 = Y[k \[Function] n \[Function]
-</span><span class='line'>      {If[n[[1]] &lt;= 1,
-</span><span class='line'>        {1, n[[2]]},
-</span><span class='line'>        {value[k[{n[[1]] - 1, n[[2]]}]][[1]] +
-</span><span class='line'>          value[k[{n[[1]] - 2, n[[2]]}]][[1]],
-</span><span class='line'>         n[[2]]}
-</span><span class='line'>        ],
-</span><span class='line'>       k[{n[[1]] + 1, n[[2]]}] &}
-</span><span class='line'>    ][{1, {}}];
-</span><span class='line'>
-</span><span class='line'>In[39]:= Timing[value[s5, #] & /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
-</span><span class='line'>Out[39]= {1.308497, {{1, {}}, {2, {}}, {3, {}}, {5, {}}, {8, {}}, {13, {}}, {21, {}}, \
-</span><span class='line'>{34, {}}, {55, {}}, {89, {}}, {987, {}}, {10946, {}}}}</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[37]:= ClearAll[s5];
+</span><span class="line">s5 = Y[k \[Function] n \[Function]
+</span><span class="line">      {If[n[[1]] &lt;= 1,
+</span><span class="line">        {1, n[[2]]},
+</span><span class="line">        {value[k[{n[[1]] - 1, n[[2]]}]][[1]] +
+</span><span class="line">          value[k[{n[[1]] - 2, n[[2]]}]][[1]],
+</span><span class="line">         n[[2]]}
+</span><span class="line">        ],
+</span><span class="line">       k[{n[[1]] + 1, n[[2]]}] &amp;}
+</span><span class="line">    ][{1, {}}];
+</span><span class="line">
+</span><span class="line">In[39]:= Timing[value[s5, #] &amp; /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
+</span><span class="line">Out[39]= {1.308497, {{1, {}}, {2, {}}, {3, {}}, {5, {}}, {8, {}}, {13, {}}, {21, {}}, \
+</span><span class="line">{34, {}}, {55, {}}, {89, {}}, {987, {}}, {10946, {}}}}</span></code></pre></td></tr></table></div></figure></notextile></div>
 
+<p>We’re now ready to promote that second part of <code>n</code> into a dictionary – same as anonymous object, same as list of rules – for fast lookups. Let’s take the convention that if a key is not present in the dictionary, we produce <code>Null</code>, and make a few helper functions:</p>
 
-<p>We&#8217;re now ready to promote that second part of <code>n</code> into a dictionary &#8211; same as anonymous object, same as list of rules &#8211; for fast lookups. Let&#8217;s take the convention that if a key is not present in the dictionary, we produce <code>Null</code>, and make a few helper functions:</p>
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[40]:= ClearAll[lookup, add];
+</span><span class="line">lookup[dict_, key_] := key /. dict;
+</span><span class="line">add[dict_, key_, value_] :=
+</span><span class="line">  With[{trial = lookup[dict, key]},
+</span><span class="line">   If[trial =!= Null,
+</span><span class="line">    dict,
+</span><span class="line">    If[Head[dict] === Dispatch,
+</span><span class="line">     Dispatch[Prepend[dict[[1]], key -&gt; value]],
+</span><span class="line">     Dispatch[Prepend[dict, key -&gt; value]]]]];</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[40]:= ClearAll[lookup, add];
-</span><span class='line'>lookup[dict_, key_] := key /. dict;
-</span><span class='line'>add[dict_, key_, value_] :=
-</span><span class='line'>  With[{trial = lookup[dict, key]},
-</span><span class='line'>   If[trial =!= Null,
-</span><span class='line'>    dict,
-</span><span class='line'>    If[Head[dict] === Dispatch,
-</span><span class='line'>     Dispatch[Prepend[dict[[1]], key -&gt; value]],
-</span><span class='line'>     Dispatch[Prepend[dict, key -&gt; value]]]]];</span></code></pre></td></tr></table></div></figure>
-
-
-<p><code>Add</code> converts the dictionary into a hash table by applying the Mathematica built-in <code>Dispatch</code> to it. This is similar to what relational databases do when computing joins &#8211; creates a temporary hash table and uses it. Before adding a new rule to the table, add must check whether the input table is already a hash table since the original list of rules is stored in slot 1 of a hash table. <code>Add</code> can only add a rule to a list of rules, not to a hash table, but <code>add</code> can regenerate a new hash table in linear time. This is a potential hidden quadratic in this code since the hash table will be created over and over again. It does not seem to be a serious problem, here, likely overwhelmed by other overheads.</p>
+<p><code>Add</code> converts the dictionary into a hash table by applying the Mathematica built-in <code>Dispatch</code> to it. This is similar to what relational databases do when computing joins – creates a temporary hash table and uses it. Before adding a new rule to the table, add must check whether the input table is already a hash table since the original list of rules is stored in slot 1 of a hash table. <code>Add</code> can only add a rule to a list of rules, not to a hash table, but <code>add</code> can regenerate a new hash table in linear time. This is a potential hidden quadratic in this code since the hash table will be created over and over again. It does not seem to be a serious problem, here, likely overwhelmed by other overheads.</p>
 
 <p>Now add the code to store computed values in the anonymous object. We must modify the initial input from <code>{1, {}}</code> to <code>{1, {_-&gt;Null}}</code> so that the starting dictionary has the default rule.</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[43]:= ClearAll[s6];
-</span><span class='line'>s6 = Y[k \[Function] n \[Function]
-</span><span class='line'>      Module[{valToStore, dict = n[[2]]},
-</span><span class='line'>       {If[n[[1]] &lt;= 1,
-</span><span class='line'>         {1, dict},
-</span><span class='line'>         valToStore =
-</span><span class='line'>          value[k[{n[[1]] - 1, dict}]][[1]] +
-</span><span class='line'>           value[k[{n[[1]] - 2, dict}]][[1]];
-</span><span class='line'>         dict = add[dict, n[[1]], valToStore];
-</span><span class='line'>         {valToStore, dict}
-</span><span class='line'>         ],
-</span><span class='line'>        k[{n[[1]] + 1, dict}] &}]
-</span><span class='line'>    ][{1, {_ -&gt; Null}}];
-</span><span class='line'>
-</span><span class='line'>In[45]:= Timing[value[s6, #] & /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
-</span><span class='line'>
-</span><span class='line'>Out[45]= {6.912630,
-</span><span class='line'>{{1,{_-&gt;Null}},
-</span><span class='line'>{2,{2-&gt;2,_-&gt;Null}},
-</span><span class='line'>{3,{3-&gt;3,2-&gt;2,_-&gt;Null}},
-</span><span class='line'>{5,{4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null}},
-</span><span class='line'>{8,Dispatch[{5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
-</span><span class='line'>{13,Dispatch[{6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
-</span><span class='line'>{21,Dispatch[{7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
-</span><span class='line'>{34,Dispatch[{8-&gt;34,7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
-</span><span class='line'>{55,Dispatch[{9-&gt;55,8-&gt;34,7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
-</span><span class='line'>{89,Dispatch[{10-&gt;89,9-&gt;55,8-&gt;34,7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
-</span><span class='line'>{987,Dispatch[{15-&gt;987,14-&gt;610,13-&gt;377,12-&gt;233,11-&gt;144,10-&gt;89,9-&gt;55,8-&gt;34,7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
-</span><span class='line'>{10946,Dispatch[{20-&gt;10946,19-&gt;6765,18-&gt;4181,17-&gt;2584,16-&gt;1597,15-&gt;987,14-&gt;610,13-&gt;377,12-&gt;233,11-&gt;144,10-&gt;89,9-&gt;55,8-&gt;34,7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]}}}
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+<span class="line-number">22</span>
+<span class="line-number">23</span>
+<span class="line-number">24</span>
+<span class="line-number">25</span>
+<span class="line-number">26</span>
+<span class="line-number">27</span>
+<span class="line-number">28</span>
+<span class="line-number">29</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[43]:= ClearAll[s6];
+</span><span class="line">s6 = Y[k \[Function] n \[Function]
+</span><span class="line">      Module[{valToStore, dict = n[[2]]},
+</span><span class="line">       {If[n[[1]] &lt;= 1,
+</span><span class="line">         {1, dict},
+</span><span class="line">         valToStore =
+</span><span class="line">          value[k[{n[[1]] - 1, dict}]][[1]] +
+</span><span class="line">           value[k[{n[[1]] - 2, dict}]][[1]];
+</span><span class="line">         dict = add[dict, n[[1]], valToStore];
+</span><span class="line">         {valToStore, dict}
+</span><span class="line">         ],
+</span><span class="line">        k[{n[[1]] + 1, dict}] &amp;}]
+</span><span class="line">    ][{1, {_ -&gt; Null}}];
+</span><span class="line">
+</span><span class="line">In[45]:= Timing[value[s6, #] &amp; /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
+</span><span class="line">
+</span><span class="line">Out[45]= {6.912630,
+</span><span class="line">{{1,{_-&gt;Null}},
+</span><span class="line">{2,{2-&gt;2,_-&gt;Null}},
+</span><span class="line">{3,{3-&gt;3,2-&gt;2,_-&gt;Null}},
+</span><span class="line">{5,{4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null}},
+</span><span class="line">{8,Dispatch[{5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
+</span><span class="line">{13,Dispatch[{6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
+</span><span class="line">{21,Dispatch[{7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
+</span><span class="line">{34,Dispatch[{8-&gt;34,7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
+</span><span class="line">{55,Dispatch[{9-&gt;55,8-&gt;34,7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
+</span><span class="line">{89,Dispatch[{10-&gt;89,9-&gt;55,8-&gt;34,7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
+</span><span class="line">{987,Dispatch[{15-&gt;987,14-&gt;610,13-&gt;377,12-&gt;233,11-&gt;144,10-&gt;89,9-&gt;55,8-&gt;34,7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]},
+</span><span class="line">{10946,Dispatch[{20-&gt;10946,19-&gt;6765,18-&gt;4181,17-&gt;2584,16-&gt;1597,15-&gt;987,14-&gt;610,13-&gt;377,12-&gt;233,11-&gt;144,10-&gt;89,9-&gt;55,8-&gt;34,7-&gt;21,6-&gt;13,5-&gt;8,4-&gt;5,3-&gt;3,2-&gt;2,_-&gt;Null},-DispatchTables-]}}}
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Now add code to do lookups</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[46]:= ClearAll[s7];
-</span><span class='line'>s7 = Y[k \[Function] n \[Function]
-</span><span class='line'>      Module[{valToStore, dict = n[[2]]},
-</span><span class='line'>       {If[n[[1]] &lt;= 1,
-</span><span class='line'>         {1, dict},
-</span><span class='line'>         valToStore =
-</span><span class='line'>          With[{
-</span><span class='line'>            v1 = lookup[dict, n[[1]] - 1],
-</span><span class='line'>            v2 = lookup[dict, n[[2]] - 2]},
-</span><span class='line'>           If[v1 =!= Null, v1,
-</span><span class='line'>             value[k[{n[[1]] - 1, dict}]][[1]]] +
-</span><span class='line'>            If[v2 =!= Null, v2,
-</span><span class='line'>             value[k[{n[[1]] - 2, dict}]][[1]]]];
-</span><span class='line'>         dict = add[dict, n[[1]], valToStore];
-</span><span class='line'>         {valToStore, dict}
-</span><span class='line'>         ],
-</span><span class='line'>        k[{n[[1]] + 1, dict}] &}]
-</span><span class='line'>    ][{1, {_ -&gt; Null}}];</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[46]:= ClearAll[s7];
+</span><span class="line">s7 = Y[k \[Function] n \[Function]
+</span><span class="line">      Module[{valToStore, dict = n[[2]]},
+</span><span class="line">       {If[n[[1]] &lt;= 1,
+</span><span class="line">         {1, dict},
+</span><span class="line">         valToStore =
+</span><span class="line">          With[{
+</span><span class="line">            v1 = lookup[dict, n[[1]] - 1],
+</span><span class="line">            v2 = lookup[dict, n[[2]] - 2]},
+</span><span class="line">           If[v1 =!= Null, v1,
+</span><span class="line">             value[k[{n[[1]] - 1, dict}]][[1]]] +
+</span><span class="line">            If[v2 =!= Null, v2,
+</span><span class="line">             value[k[{n[[1]] - 2, dict}]][[1]]]];
+</span><span class="line">         dict = add[dict, n[[1]], valToStore];
+</span><span class="line">         {valToStore, dict}
+</span><span class="line">         ],
+</span><span class="line">        k[{n[[1]] + 1, dict}] &amp;}]
+</span><span class="line">    ][{1, {_ -&gt; Null}}];</span></code></pre></td></tr></table></div></figure></notextile></div>
 
+<p>Now our regular example is much faster and an otherwise inconceivable computation such as <code>fib[150]</code> can be done in a reasonable time. </p>
 
-<p>Now our regular example is much faster and an otherwise inconceivable computation such as <code>fib[150]</code> can be done in a reasonable time.</p>
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">In[48]:= Timing[
+</span><span class="line"> value[s7, #][[1]] &amp; /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
+</span><span class="line">Out[48]= {0.068064, {1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 987, 10946}}
+</span><span class="line">
+</span><span class="line">In[49]:= Block[{$RecursionLimit = 2000}, Timing[value[s7, 150][[1]]]]
+</span><span class="line">Out[49]= {1.308640, 16130531424904581415797907386349}</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>In[48]:= Timing[
-</span><span class='line'> value[s7, #][[1]] & /@ {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20}]
-</span><span class='line'>Out[48]= {0.068064, {1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 987, 10946}}
-</span><span class='line'>
-</span><span class='line'>In[49]:= Block[{$RecursionLimit = 2000}, Timing[value[s7, 150][[1]]]]
-</span><span class='line'>Out[49]= {1.308640, 16130531424904581415797907386349}</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>CONCLUSION</h2>
+<h2 id="conclusion">CONCLUSION</h2>
 
 <p>Many improvements can be made to this, such as getting rid of the mutable variables in the <code>Module</code> by a monadic bind and refactoring the code for readability. However, we have shown a general technique for creating lazy memoizing lists without introducing names or session state into an evaluator or interpreter.</p>
 ]]></content>
