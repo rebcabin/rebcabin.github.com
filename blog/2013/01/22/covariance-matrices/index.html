@@ -1,0 +1,636 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Incremental Covariance - The Light Cone</title>
+  <meta name="author" content="Brian Beckman (rebcabin = brianbec)">
+
+  
+  <meta name="description" content="Variance is a standard measure of spread of data. It may be obvious
+that it’s easy to keep a running average of a stream of data, but it
+may not be &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://rebcabin.github.com/blog/2013/01/22/covariance-matrices/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="The Light Cone" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript"
+   src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">The Light Cone</a></h1>
+  
+    <h2>Where past and future meet at a point in spacetime</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:rebcabin.github.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Incremental Covariance</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-01-22T10:02:00-08:00" pubdate data-updated="true">Jan 22<span>nd</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Variance is a standard measure of spread of data.  It may be obvious
+that it’s easy to keep a running average of a stream of data, but it
+may not be so obvious that it’s also easy to keep a running
+variance. The method generalizes to multivariate data streams, of
+which the <em>covariance matrix</em> keeps track of variances and mutual
+correlation coefficients. We will eventually travel through
+eigenvectors and eigenvalues to orient and decompose covariance
+matrices.</p>
+
+<!--
+Aside: my secondary agenda in this blog post was to really beat up on
+my blogging tools: MathJax, Octopress, and Kramdown.  I could have
+made this much shorter by leaving out numerical examples and
+intermediate calculations.
+-->
+
+<h2 id="mean-and-variance">Mean and Variance</h2>
+
+<p>Consider a column $N$-vector of numerical data:</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+\mathbf{x}_N
+=\begin{bmatrix}x_1 \\ x_2 \\ \cdots \\ x_N\end{bmatrix}
+=\begin{bmatrix}x_1 & x_2 & \cdots & x_N\end{bmatrix}^T %]]></script>
+
+<p>For instance, here are some random data: </p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+\mathbf{x}_5=\begin{bmatrix}48 & 29 & 46 & 57 & 34\end{bmatrix}^T %]]></script>
+
+<p>The <em><strong>mean</strong></em> or average value of this vector is a number: the sum of
+the vector’selements divided by the number $N$ of elements:</p>
+
+<script type="math/tex; mode=display">\bar{x}_{N}=\frac{1}{N}\sum_{i=1}^N{x_i}={\Sigma_N\mathbf{x}_N}\left/{N}\right.</script>
+
+<p>for instance, </p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+\bar{x}_5=\frac{\Sigma_5\begin{bmatrix}48 & 29 & 46 & 57 & 34\end{bmatrix}}{5}=\frac{214}{5} %]]></script>
+
+<p>(we drop the Transpose superscript since the sum of a row vector is
+the same as the sum of a column vector).</p>
+
+<p>If you have a running stream of data, it’s easy to maintain its
+average incrementally, meaning you don’t have to store the entire
+vector to compute the mean-so-far. As $N$ increases to $N+1$, note
+that</p>
+
+<script type="math/tex; mode=display">\bar{x}_{N+1}={\frac{\Sigma_{N+1}\mathbf{x}_{N+1}}{N+1}}={\frac{\Sigma_{N}\mathbf{x}_N+x_{N+1}}{N+1}}=\frac{N\bar{x}_{N}+x_{N+1}}{N+1}</script>
+
+<p>for instance, letting $x_6=66$ be a new datum arriving on the scene:</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+\begin{align*}
+\bar{x}_6&=\frac{\Sigma_6\begin{bmatrix}48 & 29 & 46 & 57 & 34 & 66\end{bmatrix}}{6}\\
+&=\frac{\Sigma_5\begin{bmatrix}48 & 29 & 46 & 57 & 34\end{bmatrix}+66}{6}\\
+&=\frac{5\times(214/5)+6}{6}\\
+&=\frac{140}{3}
+\end{align*} %]]></script>
+
+<p>We see two algorithm choices for incrementally updating the average; informally:</p>
+
+<ol>
+  <li>keep a <strong>running sum</strong> of the data, and when you need the new average, just divide by the current number $N$ (second line in the example immediately above)</li>
+  <li>keep a <strong>running average</strong>, and when you need the new average, multiply the old average by the old count $N$, add the new datum $x_{N+1}$, and divide the result by the new count of elements $N+1$ (third line in the example above)</li>
+</ol>
+
+<p>The first alternative may be cheaper since you don’t divide until you need the average. The second alternative has a certain mathematical elegance, but you must multiply and divide to get the new average. </p>
+
+<p>With only a small variation in the algorithm, you can keep a <em><strong>sliding-window</strong></em> average over some fixed width $W$. Along with the running sum or average, keep a copy of the oldest datum used to calculate it. As the new datum arrives, subtract off the oldest one, add the newest one, and divide by the window width $W$. You will need special treatment until the window fills the first time, and possibly at the end if your stream of data is finite. </p>
+
+<p>For instance, away from the ends, a width-$3$ moving average over the sample data can be kept as follows, imagining that we add incoming new values from the right of the window and subtract old values from the left of the window:</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+
+\begin{align}
+\begin{bmatrix}\text{avg}\begin{bmatrix}48 &29 &46\end{bmatrix}&57&34\end{bmatrix}
+&=\begin{bmatrix}\begin{bmatrix}123\,/\,3\end{bmatrix}&57&34\end{bmatrix}\\ \\
+\begin{bmatrix}48 &\text{avg}\begin{bmatrix}29 &46 &57\end{bmatrix}&34\end{bmatrix}
+&=\begin{bmatrix}\begin{bmatrix}(123-48+57)\,/\,3\end{bmatrix}&34\end{bmatrix}\\
+&=\begin{bmatrix}\begin{bmatrix}132\,/\,3\end{bmatrix}&34\end{bmatrix}\\ \\
+\begin{bmatrix}48 & 29 & \text{avg}\begin{bmatrix}46 &57 &34\end{bmatrix}\end{bmatrix}
+&=\begin{bmatrix}\begin{bmatrix}(132-29+34)\,/\,3\end{bmatrix}\end{bmatrix}\\
+&=\begin{bmatrix}\begin{bmatrix}137\,/\,3\end{bmatrix}\end{bmatrix}
+\end{align}
+ %]]></script>
+
+<p>Now, about variance. Given $N$ data, the sample variance is reckoned as
+follows (though below we apply <a href="http://en.wikipedia.org/wiki/Bessel%27s_correction">Bessel’s Correction</a> to estimate population variance):</p>
+
+<script type="math/tex; mode=display">s_N^2=\frac{1}{N}\sum_{i=1}^{N}{\left(\,x_i-\bar{x}_N\right)^2}</script>
+
+<p>If we let</p>
+
+<script type="math/tex; mode=display">\mathbf{1}_N=[\underbrace{1, 1, \dotsc, 1}_{N\text{ times}}]^T</script>
+
+<p>be an $N$-vector of all $1$’s, and let</p>
+
+<script type="math/tex; mode=display">\tilde{\mathbf{x}}_N=\mathbf{x}_N-\bar{x}_N\mathbf{1}_N</script>
+
+<p>denote the $N$vector of <em><strong>residuals</strong></em> of the data from their mean, then the variance has the following beautiful expression as the scaled inner product:</p>
+
+<script type="math/tex; mode=display">s_N^2=\tilde{\mathbf{x}}_N^T\tilde{\mathbf{x}}_N\left/{N}\right.</script>
+
+<p>For instance, with our sample data</p>
+
+<script type="math/tex; mode=display">
+\tilde{\mathbf{x}}_5
+=\begin{bmatrix}48 \\ 29 \\ 46 \\ 57 \\ 34\end{bmatrix}
+- \left(\bar{x}_5=\frac{214}{5}\right)\times
+\begin{bmatrix}1 \\ 1 \\ 1 \\ 1 \\ 1\end{bmatrix}
+=\begin{bmatrix}26\,/\,5 \\ -69\,/\,5 \\ 16\,/\,5 \\ 71\,/\,5 \\ -44\,/\,5\end{bmatrix}
+</script>
+
+<script type="math/tex; mode=display">
+s_5^2
+=\frac{\tilde{\mathbf{x}}_5^T\tilde{\mathbf{x}}_5}{5}
+=\frac{2534}{25}
+</script>
+
+<p>Expanding out the inner product, a form useful for incremental updating emerges:</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+\begin{align*}
+\tilde{\mathbf{x}}_N^T\tilde{\mathbf{x}}_N\left/{N}\right.&=\left(\mathbf{x}_N-\bar{x}_N\mathbf{1}_N\right)^T\left(\mathbf{x}_N-\bar{x}_N\mathbf{1}_N\right)\left/N\right. \\
+&=\left(\mathbf{x}_N^T\mathbf{x}_N - N\bar{x}_N^2\right)\left/N\right. \\
+s_N^2&=\mathbf{x}_N^T\mathbf{x}_N\left/N\right. - \bar{x}_N^2
+\end{align*} %]]></script>
+
+<p>For instance,</p>
+
+<script type="math/tex; mode=display">
+s_5^2
+=\frac{\mathbf{x}_5^T\mathbf{x}_5=9666}{5}-\left(\frac{214}{5}\right)^2=\frac{2534}{25}
+</script>
+
+<p>When a new datum $x_{N+1}$ arrives,  update the variance in a way similar to the way we update the mean:</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+\begin{align*}
+s_{N+1}^2&=\frac{\tilde{\mathbf{x}}_{N+1}^T\tilde{\mathbf{x}}_{N+1}}{N+1}\\
+&=\frac{\left(\mathbf{x}_{N+1}-\bar{x}_{N+1}\mathbf{1}_{N+1}\right)^T\left(\mathbf{x}_{N+1}-\bar{x}_{N+1}\mathbf{1}_{N+1}\right)}{N+1}\\
+&=\frac{\mathbf{x}_{N+1}^T\mathbf{x}_{N+1}-\left(N+1\right)\:\bar{x}_{N+1}^2}{N+1}\\
+&=\frac{\mathbf{x}_N^T\mathbf{x}_N+x_{N+1}^2-\left(N+1\right)\:\bar{x}_{N+1}^2}{N+1}\\
+&=\frac{\mathbf{x}_N^T\mathbf{x}_N+x_{N+1}^2}{N+1}-\bar{x}_{N+1}^2\\
+\end{align*}
+ %]]></script>
+
+<p>For instance</p>
+
+<script type="math/tex; mode=display">
+s_6^2=\frac{\mathbf{x}_N^T\mathbf{x}_N+x_{N+1}^2
+=9666+66^2}{6}-\left(\frac{140}{3}\right)^2=\frac{1433}{9}
+</script>
+
+<p>This is really quite nice. Notice that </p>
+
+<script type="math/tex; mode=display">
+\mathbf{x}_N^T\mathbf{x}_N=\sum_{i=1}^{N}{x_i^2}
+</script>
+
+<p>for any $N$, so it’s the <em>running sum of squares</em>. We see that the variance is the running sum of squares divided by the current number $N$ of data minus the square of the current average.  This is our incremental formula for variance.  The only serious hazard we see here is that of <a href="http://en.wikipedia.org/wiki/Loss_of_significance"><em>catastrophic cancelation</em></a>: if the two quantities are of comparable magnitude, we can lose virtually all the precision.</p>
+
+<h2 id="gaussian-distribution">Gaussian Distribution</h2>
+
+<p>From the data, we might want a formula for the Gaussian distribution
+that best fits the data.  The best-fit Gaussian should use the
+<a href="http://mathworld.wolfram.com/SampleVariance.html">unbiased estimator for the population
+variance</a>, related
+to the sample variance we have been calculating, but with $N-1$
+in the denominator instead of $N$ – Bessel’s correction. Letting</p>
+
+<script type="math/tex; mode=display">
+\sigma^2=\frac{N}{N-1}s_N^2,\quad\mu_N=\bar{x}_N
+</script>
+
+<p>The univariate Gaussian or Normal distribution depends on $\mu$ and
+$\sigma$ and represents the probability that $x$ might lie in the
+infinitesimal interval $x$ and $x+dx$:</p>
+
+<script type="math/tex; mode=display">
+\mathcal{N}(x;\mu,\sigma)=P(x) = \frac{1}{\sqrt{2\pi\sigma^2}}
+\exp\left({-\frac{(x-\mu)^2}{2\sigma^2}}\right)
+</script>
+
+<p>We can plot the Gaussian that best fits our sample data along with a
+histogram of our data and see a plausible match (we scaled up the
+Gaussian by the area of the histogram, a somewhat arbitrary number
+depending on the choice of histogram bin width):</p>
+
+<p><img class="center" src="https://dl.dropbox.com/u/1997638/pdfx2.png" width="400" height="400" /></p>
+
+<p>To quantitatively test the goodness-of-fit, apply something like the <a href="http://en.wikipedia.org/wiki/Chi-squared_test">Chi-Squared test</a> or the <a href="http://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test">Kolmogorov-Smirnov test</a>. </p>
+
+<h2 id="multivariate-distributions">Multivariate Distributions</h2>
+
+<p>The particular form $\mathbf{x}_N^T\mathbf{x}$ goes over easily to an
+elegant form for multivariate data, where we keep variances and
+correlation coefficients in a matrix.</p>
+
+<p>Consider a pair of column $N$-vectors of numerical data:</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+\begin{align*}
+\mathbf{x}&=\left[x_1, x_2, \dotsc, x_N\right]^T\\
+\mathbf{y}&=\left[y_1, y_2, \dotsc, y_N\right]^T
+\end{align*} %]]></script>
+
+<p>Plotting $y$’s against $x$’s, we might see something like the following:</p>
+
+<p><img class="center" src="https://dl.dropbox.com/u/1997638/xy.png" width="400" height="400" /></p>
+
+<p>Now, calculate the mean of each vector:</p>
+
+<script type="math/tex; mode=display">\bar{x}_N=\Sigma_N\mathbf{x}_N\left/N\right.,\;\; \bar{y}_N=\Sigma_N\mathbf{y}_N\left/N\right.</script>
+
+<p>and the residuals</p>
+
+<script type="math/tex; mode=display">
+\tilde{\mathbf{x}}_N=\mathbf{x}_N-\bar{x}_N\mathbf{1}_N,\;\; \tilde{\mathbf{y}}_N=\mathbf{y}_N-\bar{y}_N\mathbf{1}_N
+</script>
+
+<p>Now imagine a column of rows in an outer product with a row of columns:</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+
+\begin{bmatrix}
+\tilde{\mathbf{x}}_N^T \\ \tilde{\mathbf{y}}_N^T
+\end{bmatrix}
+\begin{bmatrix}
+\tilde{\mathbf{x}}_N    & \tilde{\mathbf{y}}_N
+\end{bmatrix}
+=
+\begin{bmatrix}
+\tilde{\mathbf{x}}_N^T\tilde{\mathbf{x}}_N & \tilde{\mathbf{x}}_N^T\tilde{\mathbf{y}}_N \\
+\tilde{\mathbf{y}}_N^T\tilde{\mathbf{x}}_N & \tilde{\mathbf{y}}_N^T\tilde{\mathbf{y}}_N 
+\end{bmatrix}
+ %]]></script>
+
+<p>Divide this by $N$ and call the result $S_N^2$:</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+S_N^2=
+\frac{1}{N}
+\begin{bmatrix}
+\tilde{\mathbf{x}}_N^T\tilde{\mathbf{x}}_N & \tilde{\mathbf{x}}_N^T\tilde{\mathbf{y}}_N \\
+\tilde{\mathbf{y}}_N^T\tilde{\mathbf{x}}_N & \tilde{\mathbf{y}}_N^T\tilde{\mathbf{y}}_N 
+\end{bmatrix}
+ %]]></script>
+
+<p>Each sub-product in the matrix can be computed incrementally as
+described above, plus $\tilde{\mathbf{x}}_N^T\tilde{\mathbf{y}}_N =
+\tilde{\mathbf{y}}_N^T\tilde{\mathbf{x}}_N$, so it is cheap to keep a running value for the
+matrix.</p>
+
+<p>Just as with the univariate Gaussian, we convert the sample covariance matrix
+into an unbiased estimator of the population covariance matrix by multiplying
+by $N$ and dividing by $N-1$. Let</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+\Sigma_N^2=
+\frac{1}{N-1}
+\begin{bmatrix}
+\tilde{\mathbf{x}}_N^T\tilde{\mathbf{x}}_N & \tilde{\mathbf{x}}_N^T\tilde{\mathbf{y}}_N \\
+\tilde{\mathbf{y}}_N^T\tilde{\mathbf{x}}_N & \tilde{\mathbf{y}}_N^T\tilde{\mathbf{y}}_N 
+\end{bmatrix}=
+\frac{N S_N^2}{N-1}
+ %]]></script>
+
+<p>The bivariate Gaussian or normal distribution has such a beautiful form
+that it can be remembered without looking it up:</p>
+
+<script type="math/tex; mode=display">
+\mathcal{N}(x, y\,;\mu, \sigma) = P(x,y) =\\
+\frac{1}{2\pi\left|\Sigma^2\right|^{1/2}}
+\exp
+\left({-
+\frac{1}{2}
+\begin{bmatrix}
+  x-\bar{x} \\ y-\bar{y}
+\end{bmatrix}^T
+\Sigma^{-2}
+\begin{bmatrix}
+  x-\bar{x} \\ y-\bar{y}
+\end{bmatrix}
+}\right)
+</script>
+
+<p>where $\left|\Sigma^2\right|^{1/2}$ is the square root of the determinant of 
+$\Sigma^2$ and $\Sigma^{-2}$ is the inverse of $\Sigma^2$. The formula
+generalizes to $D$ dimensions, in which case the coefficient $2\pi$ must
+be written $(2\pi)^{D/2}$.</p>
+
+<p>I created the example cloud of points above by sampling 500 points
+from a bivariate Gaussian formula at a mean point of 
+$\begin{bmatrix}\bar{x} &amp; \bar{y}\end{bmatrix} =
+\begin{bmatrix}5 &amp; 5\end{bmatrix}
+$ and the covariance matrix:</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+
+\Sigma^2 = \frac{1}{16}
+\begin{bmatrix}
+16 & 7 \\ 7 & 8
+\end{bmatrix}
+=
+\begin{bmatrix}
+1 & 0.4375 \\ 0.4375 & 0.5
+\end{bmatrix}
+ %]]></script>
+
+<p>If we calculate $\Sigma_N^2=\Sigma_{500}^2$, the unbiased population
+covariance estimate, from the data, we get</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+
+\begin{bmatrix}
+0.9455 & 0.4276 \\ 0.4276 & 0.4992
+\end{bmatrix}
+ %]]></script>
+
+<p>plasibly close to the original (though a formal test, as mentioned, 
+would be required to say quantitatively how much).</p>
+
+<p>Later, we have to figure out exactly <em>how</em> to sample a multivariate
+Gaussian like this (hints: do the sampling in a new coordinate system
+in which the $x$ and $y$ variables are uncorrelated. That is a
+coordinate system in which the principal axes of the cloud are aligned
+with the $x$ and $y$ axes. That entails a Principal-Component Analysis
+(PCA) of the covariance matrix or its inverse and their square roots,
+which can be cheaply done with the Singular-Value Decomposition (SVD).</p>
+
+<!--
+This is symmetric because $\tilde{\mathbf{x}}_N^T \tilde{\mathbf{y}}_N=\tilde{\mathbf{y}}_N^T \tilde{\mathbf{x}}_N$. 
+
+$$
+\begin{align*}
+  & \phi(x,y) = \phi \left(\sum_{i=1}^n x_ie_i, \sum_{j=1}^n y_je_j \right)
+  = \sum_{i=1}^n \sum_{j=1}^n x_i y_j \phi(e_i, e_j) = \\
+  & (x_1, \ldots, x_n) \left( \begin{array}{ccc}
+      \phi(e_1, e_1) & \cdots & \phi(e_1, e_n) \\
+      \vdots & \ddots & \vdots \\
+      \phi(e_n, e_1) & \cdots & \phi(e_n, e_n)
+    \end{array} \right)
+  \left( \begin{array}{c}
+      y_1 \\
+      \vdots \\
+      y_n
+    \end{array} \right)
+\end{align*}
+$$
+-->
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Brian Beckman (rebcabin = brianbec)</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-01-22T10:02:00-08:00" pubdate data-updated="true">Jan 22<span>nd</span>, 2013</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://rebcabin.github.com/blog/2013/01/22/covariance-matrices/" data-via="lorentzframe" data-counturl="http://rebcabin.github.com/blog/2013/01/22/covariance-matrices/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/01/19/asynchronous-lazy-lists/" title="Previous Post: Asynchronous Lazy Lists">&laquo; Asynchronous Lazy Lists</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/01/22/covariance-matrices/">Incremental Covariance</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/19/asynchronous-lazy-lists/">Asynchronous Lazy Lists</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/13/fast-arbitrary-non-uniform-randoms/">Fast Arbitrary Non-Uniform Randoms</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/anonymous-memoizing-lazy-lists/">Anonymous Memoizing Lazy Lists</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/rebcabin">@rebcabin</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'rebcabin',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+<section>
+  <h1>Latest Tweets</h1>
+  <ul id="tweets">
+    <li class="loading">Status updating...</li>
+  </ul>
+  <script type="text/javascript">
+    $.domReady(function(){
+      getTwitterFeed("lorentzframe", 4, false);
+    });
+  </script>
+  <script src="/javascripts/twitter.js" type="text/javascript"> </script>
+  
+    <a href="http://twitter.com/lorentzframe" class="twitter-follow-button" data-show-count="false">Follow @lorentzframe</a>
+  
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Brian Beckman (rebcabin = brianbec) -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
