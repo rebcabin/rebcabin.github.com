@@ -4,7 +4,7 @@
   <title><![CDATA[The Light Cone]]></title>
   <link href="http://rebcabin.github.com/atom.xml" rel="self"/>
   <link href="http://rebcabin.github.com/"/>
-  <updated>2013-02-01T08:14:07-08:00</updated>
+  <updated>2013-02-05T06:09:49-08:00</updated>
   <id>http://rebcabin.github.com/</id>
   <author>
     <name><![CDATA[Brian Beckman (rebcabin = brianbec)]]></name>
@@ -12,6 +12,242 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Welford's Way to Kalman City]]></title>
+    <link href="http://rebcabin.github.com/blog/2013/02/04/welfords-better-formula/"/>
+    <updated>2013-02-04T06:48:00-08:00</updated>
+    <id>http://rebcabin.github.com/blog/2013/02/04/welfords-better-formula</id>
+    <content type="html"><![CDATA[<p>Should you square differences or should you difference squares?
+Both methods harbor algebraically correct ways to compute <a href="http://localhost:4000/blog/2013/01/22/covariance-matrices/">incremental (co)variance</a>, 
+but their numerical properties are different, as pointed out by
+<a href="http://www.johndcook.com/blog/2008/09/26/comparing-three-methods-of-computing-standard-deviation/">John D. Cook here</a> and <a href="http://www.johndcook.com/blog/2008/09/28/theoretical-explanation-for-numerical-results/">here</a>.</p>
+
+<p>When you square numbers, you do two risky things: you make big numbers
+bigger and you make small numbers smaller.  Together, these effects
+can be <a href="http://en.wikipedia.org/wiki/Loss_of_significance">catastrophic</a>.
+Suppose, for instance, that you’re working with positive numbers that
+look like $b+\epsilon$, where $b\geq 1$ and $0&lt;\epsilon&lt;1$. Squaring,
+you get $b^2+2b\epsilon+\epsilon^2$. The big part, $b$, gets bigger:
+$b^2$; and the small part, $\epsilon$, gets smaller:
+$\epsilon^2$. Everyone knows you shouldn’t add big numbers to little
+ones on computers.  The big ones crowd out space for the little ones.
+You will eventually run out of <em>dynamic range</em> – the number of bits
+in your machine numbers – and your squares will evaluate to
+$b^2+2b\epsilon$ or even just to $b^2$.  This is the dreaded
+<em>underflow</em>.</p>
+
+<p>Remember those Mandelbrot-set-viewing programs?  If you kept zooming,
+the picture would eventually get all soft and pillowy and you would
+never get to see more detail.  That’s because you ran out of dynamic
+range.  There wasn’t any room for all the heavenly beauty hiding in the $\epsilon^2$.
+It takes special techniques to keep going; see <a href="http://www.hpdz.net/TechInfo.htm">high-precision deep zoom</a> and <a href="http://fractaljourney.blogspot.com/">fractaljourney</a>.</p>
+
+<p>Now, when you try to subtract squares from one another, you get
+another opportunity to mess up.  Everyone knows you shouldn’t subtract
+nearly equal numbers on computers <em>and</em> expect the little bits to
+contain good information (<a href="http://www.codeproject.com/Articles/25294/Avoiding-Overflow-Underflow-and-Loss-of-Precision">another John D. Cook article, here,
+elaborates</a>). It’s another aspect of crowding out: the little bits you’re trying to
+recover by subtracting were never there in the first place.</p>
+
+<p>But why would it make a difference to square first, then subtract,
+versus subtract first, then square?  If you square first and then
+subtract, you’re subtracting extra-big numbers – bigger than you
+need.  If you subtract first, you’re still exposed to crowding out,
+but less so.  Squared numbers crowd out approximately twice the bits
+of non-squared numbers.  You can avoid going to special techniques
+longer if you subtract first and then square.</p>
+
+<p>This is rather a deep and important observation, especially for sequential
+estimation techniques like the <a href="http://en.wikipedia.org/wiki/Kalman_filter">Kalman filter</a>
+and its many
+variations. These techniques rely on accurate, iterative propagation
+of covariance matrices. Losing even a little significance each round
+can make a final result useless or worse, <em>i.e.</em>, not obviously wrong.</p>
+
+<p>As a result, a whole technology of avoiding squares has arisen in the
+filtering business.
+<a href="http://ieeexplore.ieee.org/xpl/login.jsp?tp=&amp;arnumber=61004&amp;url=http%3A%2F%2Fieeexplore.ieee.org%2Fiel4%2F9%2F2222%2F00061004.pdf%3Farnumber%3D61004">Bierman’s work</a>
+is in my own lineage due to my time at the Jet Propulsion Laboratory,
+and searching for any of “Square-Root Information Filter,”
+“Square-Root Sigma-Point Information Filter,” “Square-Root Unscented
+Kalman Filter,” and so on will uncover a robust, contemporary literature on
+continuing research and applications of sophisticated methods for
+avoiding the squaring of machine numbers.</p>
+
+<p>I can see a direct provenance of these techniques in Welford’s method,
+the best method cited by John above.  Welford’s is a recurrence formula,
+giving the sum of $N+1$ squared residuals in terms of the sum of $N$
+squared residuals, where the residuals are differences of data from
+their means.  Since the means can be calculated incrementally (never
+requiring storage of all the data), Welford’s is also incremental,
+requiring only the storage of prior results.  Welford’s formula is
+also pretty to look at and easy to remember.</p>
+
+<p>Let $S_N$ be the sum of squared residuals of the first $N$ data:</p>
+
+<script type="math/tex; mode=display">
+S_N := \sum_{i=1}^N{\left(x_i-\bar{x}_N\right)^2}
+</script>
+
+<!--
+$$
+\begin{align*}
+r_{i,N} &:= (x_i-\bar{x}_N) \\ 
+S_N     &:= \sum_{i=1}^N{r_{i,N}^2}
+\end{align*}
+$$
+-->
+
+<p>where $\bar{x}_N$ is the mean of the $N$ data $x_i,\,i\in [1..N]$:</p>
+
+<script type="math/tex; mode=display">
+\bar{x}_N:=\frac{1}{N}\sum_{i=1}^{N}{x_i} := \Sigma_N \left/ N \right.
+</script>
+
+<p>Then Welford’s update formula is</p>
+
+<script type="math/tex; mode=display">
+S_{N+1} = S_N + \left(x_{N+1}-\bar{x}_N\right)\left(x_{N+1}-\bar{x}_{N+1}\right)
+</script>
+
+<!--
+Just multiply the new residual 
+$x_{N+1}-\bar{x}_{N+1}$ 
+times the
+difference of the new datum and the old mean 
+$x_{N+1}-\bar{x}_N$ 
+and add it to the old sum of squared residuals $S_N$.
+-->
+
+<p>Generally, I prefer to remember the derivations of formulas along with
+the formulas.  Doing so gives deeper, permanent understanding plus a
+chance to reuse parts of the derivation in other formulas.  If I don’t
+remember the derivation, it’s a little like knowing a tune without
+knowing its chord progression and verse structure.  You might still be
+able to play the tune, but not with as much conviction or creativity.</p>
+
+<p>A brute-force expansion of the terms leads to a lot of messy
+algebra that all cancels out, proving the formula correct, but not
+yielding any insight into how the author may have seen the pretty and
+memorable form.  <a href="http://planetmath.org/OnePassAlgorithmToComputeSampleVariance.html">An article at Planetmath.org</a> 
+gave me the key to the puzzle: write $S_{N+1}$ as a sum of the same terms as in $S_N$, but with a correction $\gamma$:</p>
+
+<script type="math/tex; mode=display">% &lt;![CDATA[
+
+\begin{align*}
+
+S_{N+1}
+  &=\sum_{i=1}^{N+1}{\left(x_i - \bar{x}_{N+1}\right)^2} \\
+
+  &=\sum_{i=1}^{N}{\left(x_i - \bar{x}_{N+1}\right)^2} + \left(x_{N+1}-\bar{x}_{N+1}\right)^2\\
+
+  &=\sum_{i=1}^N{\left(x_i - \left(\bar{x}_{N} + \gamma\right)\right)^2} + \left(x_{N+1}-\bar{x}_{N+1}\right)^2
+
+\end{align*}
+ %]]&gt;</script>
+
+<p>where</p>
+
+<script type="math/tex; mode=display">
+\gamma:=\bar{x}_{N+1}-\bar{x}_N
+</script>
+
+<p>Regroup the inner sum, then square:</p>
+
+<script type="math/tex; mode=display">% &lt;![CDATA[
+
+\begin{align*}
+
+S_{N+1}
+  &=\sum_{i=1}^N{\left(\left(x_i - \bar{x}_N\right) - \gamma\right)^2} + \left(x_{N+1}-\bar{x}_{N+1}\right)^2 \\
+
+  &=\sum_{i=1}^N{\left(\left(x_i - \bar{x}_N\right)^2 - 2\gamma\left(x_i - \bar{x}_N\right)+\gamma^2\right)} + \left(x_{N+1}-\bar{x}_{N+1}\right)^2 \\
+
+  &=\sum_{i=1}^N{\left(x_i - \bar{x}_N\right)^2} - 2\gamma\sum_{i=1}^N{\left(x_i - \bar{x}_N\right)} + \sum_{i=1}^N{\gamma^2} + \left(x_{N+1}-\bar{x}_{N+1}\right)^2 \\
+
+  &=S_N+N\gamma^2+\left(x_{N+1}-\bar{x}_{N+1}\right)^2
+
+\end{align*}
+ %]]&gt;</script>
+
+<p>because</p>
+
+<script type="math/tex; mode=display">
+\sum_{i=1}^{N}{\left(x_i - \bar{x}_N\right)} = 0
+</script>
+
+<p>That’s enough for an algorithm, but not quite enough to get to the
+pretty, easy-to-remember formula (don’t get me started on the
+practical utility of beauty in mathematics – for another time!).</p>
+
+<p>We just need to show that</p>
+
+<script type="math/tex; mode=display">
+N\gamma^2 + \left(x_{N+1}-\bar{x}_{N+1}\right)^2 = 
+\left(x_{N+1}-\bar{x}_N\right)\left(x_{N+1}-\bar{x}_{N+1}\right)
+</script>
+
+<p>But</p>
+
+<script type="math/tex; mode=display">% &lt;![CDATA[
+
+\begin{align*}
+
+x_{N+1}
+  &=(N+1)\,\bar{x}_{N+1}-N\bar{x}_{N} \\
+  &=N\gamma +\bar{x}_{N+1}
+\end{align*}
+ %]]&gt;</script>
+
+<p>so</p>
+
+<script type="math/tex; mode=display">% &lt;![CDATA[
+
+\begin{align*}
+
+\left( x_{N+1}-\bar{x}_{N+1}\right)^{2}
+  &=N^{2}\gamma^{2}
+  
+\end{align*}
+ %]]&gt;</script>
+
+<p>Now, the term we need to analyze is</p>
+
+<script type="math/tex; mode=display">% &lt;![CDATA[
+
+\begin{align*}
+
+N\gamma^{2}+\left(x_{N+1}-\bar{x}_{N+1}\right)^{ 2 }
+  &=(N+N^2)\,\gamma^2\\
+  &=N\gamma\,\left(N+1\right)\,\gamma
+  
+\end{align*}
+ %]]&gt;</script>
+
+<p>We already found that</p>
+
+<script type="math/tex; mode=display">
+N\gamma
+  = x_{N+1}-\bar{x}_{N+1}
+</script>
+
+<p>so we just look at</p>
+
+<script type="math/tex; mode=display">% &lt;![CDATA[
+
+\begin{align*}
+\left(N+1\right)\,\gamma 
+  &= \left(N+1\right)\left(\bar{x}_{N+1} - \bar{x}_N \right)\\
+  &= \left(\left(N+1\right)\,\bar{x}_{N+1} - \left(N+1\right)\,\bar{x}_N \right)\\
+  &= \left(\Sigma_{N+1} - \Sigma_N - \bar{x}_N \right)\\
+  &= \left(x_{N+1} - \bar{x}_N \right)
+\end{align*}
+ %]]&gt;</script>
+
+<p>Isn’t that fantastic?</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Incremental Covariance]]></title>

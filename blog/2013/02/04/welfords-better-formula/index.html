@@ -1,24 +1,128 @@
-<?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Category: Algorithms | The Light Cone]]></title>
-  <link href="http://rebcabin.github.com/blog/categories/algorithms/atom.xml" rel="self"/>
-  <link href="http://rebcabin.github.com/"/>
-  <updated>2013-02-05T06:09:49-08:00</updated>
-  <id>http://rebcabin.github.com/</id>
-  <author>
-    <name><![CDATA[Brian Beckman (rebcabin = brianbec)]]></name>
-    
-  </author>
-  <generator uri="http://octopress.org/">Octopress</generator>
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Welford's Way to Kalman City - The Light Cone</title>
+  <meta name="author" content="Brian Beckman (rebcabin = brianbec)">
 
   
-  <entry>
-    <title type="html"><![CDATA[Welford's Way to Kalman City]]></title>
-    <link href="http://rebcabin.github.com/blog/2013/02/04/welfords-better-formula/"/>
-    <updated>2013-02-04T06:48:00-08:00</updated>
-    <id>http://rebcabin.github.com/blog/2013/02/04/welfords-better-formula</id>
-    <content type="html"><![CDATA[<p>Should you square differences or should you difference squares?
+  <meta name="description" content="Should you square differences or should you difference squares?
+Both methods harbor algebraically correct ways to compute incremental (co)variance, &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://rebcabin.github.com/blog/2013/02/04/welfords-better-formula/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="The Light Cone" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript"
+   src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">The Light Cone</a></h1>
+  
+    <h2>Where past and future meet at a point in spacetime</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:rebcabin.github.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Welford's Way to Kalman City</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-02-04T06:48:00-08:00" pubdate data-updated="true">Feb 4<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Should you square differences or should you difference squares?
 Both methods harbor algebraically correct ways to compute <a href="http://localhost:4000/blog/2013/01/22/covariance-matrices/">incremental (co)variance</a>, 
 but their numerical properties are different, as pointed out by
 <a href="http://www.johndcook.com/blog/2008/09/26/comparing-three-methods-of-computing-standard-deviation/">John D. Cook here</a> and <a href="http://www.johndcook.com/blog/2008/09/28/theoretical-explanation-for-numerical-results/">here</a>.</p>
@@ -133,7 +237,7 @@ yielding any insight into how the author may have seen the pretty and
 memorable form.  <a href="http://planetmath.org/OnePassAlgorithmToComputeSampleVariance.html">An article at Planetmath.org</a> 
 gave me the key to the puzzle: write $S_{N+1}$ as a sum of the same terms as in $S_N$, but with a correction $\gamma$:</p>
 
-<script type="math/tex; mode=display">% &lt;![CDATA[
+<script type="math/tex; mode=display">% <![CDATA[
 
 \begin{align*}
 
@@ -145,7 +249,7 @@ S_{N+1}
   &=\sum_{i=1}^N{\left(x_i - \left(\bar{x}_{N} + \gamma\right)\right)^2} + \left(x_{N+1}-\bar{x}_{N+1}\right)^2
 
 \end{align*}
- %]]&gt;</script>
+ %]]></script>
 
 <p>where</p>
 
@@ -155,7 +259,7 @@ S_{N+1}
 
 <p>Regroup the inner sum, then square:</p>
 
-<script type="math/tex; mode=display">% &lt;![CDATA[
+<script type="math/tex; mode=display">% <![CDATA[
 
 \begin{align*}
 
@@ -169,7 +273,7 @@ S_{N+1}
   &=S_N+N\gamma^2+\left(x_{N+1}-\bar{x}_{N+1}\right)^2
 
 \end{align*}
- %]]&gt;</script>
+ %]]></script>
 
 <p>because</p>
 
@@ -190,7 +294,7 @@ N\gamma^2 + \left(x_{N+1}-\bar{x}_{N+1}\right)^2 =
 
 <p>But</p>
 
-<script type="math/tex; mode=display">% &lt;![CDATA[
+<script type="math/tex; mode=display">% <![CDATA[
 
 \begin{align*}
 
@@ -198,11 +302,11 @@ x_{N+1}
   &=(N+1)\,\bar{x}_{N+1}-N\bar{x}_{N} \\
   &=N\gamma +\bar{x}_{N+1}
 \end{align*}
- %]]&gt;</script>
+ %]]></script>
 
 <p>so</p>
 
-<script type="math/tex; mode=display">% &lt;![CDATA[
+<script type="math/tex; mode=display">% <![CDATA[
 
 \begin{align*}
 
@@ -210,11 +314,11 @@ x_{N+1}
   &=N^{2}\gamma^{2}
   
 \end{align*}
- %]]&gt;</script>
+ %]]></script>
 
 <p>Now, the term we need to analyze is</p>
 
-<script type="math/tex; mode=display">% &lt;![CDATA[
+<script type="math/tex; mode=display">% <![CDATA[
 
 \begin{align*}
 
@@ -223,7 +327,7 @@ N\gamma^{2}+\left(x_{N+1}-\bar{x}_{N+1}\right)^{ 2 }
   &=N\gamma\,\left(N+1\right)\,\gamma
   
 \end{align*}
- %]]&gt;</script>
+ %]]></script>
 
 <p>We already found that</p>
 
@@ -234,7 +338,7 @@ N\gamma
 
 <p>so we just look at</p>
 
-<script type="math/tex; mode=display">% &lt;![CDATA[
+<script type="math/tex; mode=display">% <![CDATA[
 
 \begin{align*}
 \left(N+1\right)\,\gamma 
@@ -243,92 +347,175 @@ N\gamma
   &= \left(\Sigma_{N+1} - \Sigma_N - \bar{x}_N \right)\\
   &= \left(x_{N+1} - \bar{x}_N \right)
 \end{align*}
- %]]&gt;</script>
+ %]]></script>
 
 <p>Isn’t that fantastic?</p>
-]]></content>
-  </entry>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
   
-  <entry>
-    <title type="html"><![CDATA[Fast Arbitrary Non-Uniform Randoms]]></title>
-    <link href="http://rebcabin.github.com/blog/2012/12/13/fast-arbitrary-non-uniform-randoms/"/>
-    <updated>2012-12-13T08:28:00-08:00</updated>
-    <id>http://rebcabin.github.com/blog/2012/12/13/fast-arbitrary-non-uniform-randoms</id>
-    <content type="html"><![CDATA[<p>You give me an array of integers representing the distribution of outcomes of some discrete random process (translation: you give me the specification of a loaded die: “I want 1 to come up 7/39 of the time; 2 to come up 5/39 of the time; I’d better NEVER see a 3 ‘cause I’m betting the farm on that; 4 to come up 11/39 of the time; 5 to come up 3/39 of the time; and 6 to come up 13/39 of the time.”).  You also give me a uniform pseudo-random number generator (PRNG) like Mathematica’s <a href="http://reference.wolfram.com/mathematica/ref/RandomInteger.html?q=RandomInteger&amp;lang=en">Random Integer</a>.  I give you back a new PRNG that honors the distribution you gave me, in the sense that, statistically, it generates outcomes with the same distribution as you gave me.</p>
 
-<p>The problem is a practical, real-world problem.  Any time you need to generate random numbers according to some arbitrary, given distribution such as in simulation, traversing a Bayesian network, a decision tree, a packet retry backoff schedule, you name it, the problem comes up.  In my work, it comes up every time I need to generate random expressions for testing parsers or for Monte-Carlo search for formulas.  Most of the time, you want to generate expressions non-uniformly.  For instance, you’d like to generate addition expressions more frequently than division expressions or function calls more frequently than function definitions.  </p>
+<span class="byline author vcard">Posted by <span class="fn">Brian Beckman (rebcabin = brianbec)</span></span>
 
-<p>There are a lot of solutions to this problem.  Probability mavens will immediately see that the problem boils down to <a href="http://en.wikipedia.org/wiki/Inverse_transform_sampling">inverting the CDF</a>.  We can do this by:</p>
+      
 
-<ul>
-  <li>linear search – O(N) space, O(N) time, where N is the number of different outcomes – the number of elements in the original array – the number of sides on the loaded die – 6 in our example</li>
-  <li>binary search – O(N) space, O(log(N)) time – this works because the CDF is monotonically increasing</li>
-  <li>by constructing an explicit inverse in an array – O(S) space, O(1) time, where S is the sum of the numbers in the array – the total number of trials imputed in the original distribution – 39 in our example </li>
-  <li>by my favorite method: <a href="http://code.activestate.com/recipes/576564-walkers-alias-method-for-random-objects-with-diffe/">Walker’s method of aliases</a> – O(N) space and O(1) time.</li>
-</ul>
 
-<p>At first glance, this seems ridiculous, but there is a way.  In a nutshell: paint a dartboard with colors in the given proportions, throw darts, lookup the colors (thanks to Terence Spies for this beautiful idea).</p>
 
-<p>Less metaphorically: imagine that the counts are colored balls distributed in bins:</p>
 
-<ol>
-  <li>7 balls of color number 1 in bin number 1</li>
-  <li>5 balls of color number 2 in bin number 2</li>
-  <li>0 balls of color number 3 in bin number 3</li>
-  <li>11 balls of color number 4 in bin number 4</li>
-  <li>3 balls of color number 5 in bin number 5</li>
-  <li>13 balls of color number six in bin number 6</li>
-</ol>
 
-<p>Scale up the given counts of balls until the total is divisible by N – multiply every count by D/S where D=lcm(N,S)=lcm(6,39)=78: D/S=2</p>
 
-<p>Now we have</p>
 
-<ol>
-  <li>14 balls of color number 1 in bin number 1</li>
-  <li>10 balls of color number 2 in bin number 2</li>
-  <li>0 balls of color number 3 in bin number 3</li>
-  <li>22 balls of color number 4 in bin number 4</li>
-  <li>6 balls of color number 5 in bin number 5</li>
-  <li>26 balls of color number six in bin number 6</li>
-</ol>
 
-<p>Redistribute the counts amongst the bins so that every bin contains the same number of counts, namely D/N=13, and that the following conditions obtain:</p>
-
-<ul>
-  <li>every new bin contains at most 2 colors</li>
-  <li>you never take ALL the balls out of any bin – every bin contains at least one ball of its original color if it had any</li>
-</ul>
-
-<p>There is a very elegant algorithm for this redistribution process.  It’s a one-liner whose statement is a proof of its correctness.  Think a minute, if you like, to see if you can come up with it, but here it is:</p>
-
-<p>Fill up the shortest bin from the tallest bin; remove the new filled bin from the game and continue.</p>
-
-<p>Do this procedure on a piece of paper:</p>
-
-<ol>
-  <li>Take 13 balls from bin 6 leaving 13 balls; fill up and remove bin 3</li>
-  <li>Take 7 balls from bin 4 leaving 15 balls; fill up and remove bin 5</li>
-  <li>Take 3 balls from bin 4 leaving 12 balls; fill up and remove bin 2</li>
-  <li>Take 1 ball from bin 1 leaving 13 balls; fill up and remove bin 4</li>
-  <li>Bins 1 and 6 are left with 13 balls each; we’re done (mechanically, you can imagine taking 0 balls from bin 6, filling up bin 1; removing bin 1, leaving just one bin – bin 6).</li>
-</ol>
-
-<p>you should end up with </p>
-
-<ol>
-  <li>13 balls of color 1 in bin 1 and no balls of any foreign color</li>
-  <li>10 balls of color 2 and 3 balls of color 4 in bin 2</li>
-  <li>0 balls of color 3 and 13 balls of color 6 in bin 3</li>
-  <li>12 balls of color 4 and 1 balls of color 1 in bin 4</li>
-  <li>6 balls of color 5 and 7 balls of color 4 in bin 5</li>
-  <li>13 balls of color 6 in bin 6 and no balls of any foreign color</li>
-</ol>
-
-<p>Now, to generate new randoms, roll once to choose a bin <code>RandomInteger[{1,N}]</code>, and roll again to choose a height <code>RandomInteger[{1,D/N}]</code>.  If the randomly chosen height is less than or equal to the number of balls of the home color, return the number of the home color; otherwise, return the number of the foreign color. </p>
-
-<p>Nifty, eh?  Here is a Mathematica notebook with an implementation tuned for clarity: <a href="https://dl.dropbox.com/u/1997638/FastNonUniformPseudoRandoms.cdf">https://dl.dropbox.com/u/1997638/FastNonUniformPseudoRandoms.cdf</a></p>
-]]></content>
-  </entry>
   
-</feed>
+
+
+<time datetime="2013-02-04T06:48:00-08:00" pubdate data-updated="true">Feb 4<span>th</span>, 2013</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/algorithms/'>Algorithms</a>, <a class='category' href='/blog/categories/mathematics/'>Mathematics</a>, <a class='category' href='/blog/categories/statistics/'>Statistics</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://rebcabin.github.com/blog/2013/02/04/welfords-better-formula/" data-via="lorentzframe" data-counturl="http://rebcabin.github.com/blog/2013/02/04/welfords-better-formula/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/01/22/covariance-matrices/" title="Previous Post: Incremental Covariance">&laquo; Incremental Covariance</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/02/04/welfords-better-formula/">Welford's Way to Kalman City</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/22/covariance-matrices/">Incremental Covariance</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/19/asynchronous-lazy-lists/">Asynchronous Lazy Lists</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/13/fast-arbitrary-non-uniform-randoms/">Fast Arbitrary Non-Uniform Randoms</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/anonymous-memoizing-lazy-lists/">Anonymous Memoizing Lazy Lists</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/rebcabin">@rebcabin</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'rebcabin',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+<section>
+  <h1>Latest Tweets</h1>
+  <ul id="tweets">
+    <li class="loading">Status updating...</li>
+  </ul>
+  <script type="text/javascript">
+    $.domReady(function(){
+      getTwitterFeed("lorentzframe", 4, false);
+    });
+  </script>
+  <script src="/javascripts/twitter.js" type="text/javascript"> </script>
+  
+    <a href="http://twitter.com/lorentzframe" class="twitter-follow-button" data-show-count="false">Follow @lorentzframe</a>
+  
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Brian Beckman (rebcabin = brianbec) -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
