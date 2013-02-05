@@ -4,7 +4,7 @@
   <title><![CDATA[The Light Cone]]></title>
   <link href="http://rebcabin.github.com/atom.xml" rel="self"/>
   <link href="http://rebcabin.github.com/"/>
-  <updated>2013-02-05T09:01:02-08:00</updated>
+  <updated>2013-02-05T09:59:31-08:00</updated>
   <id>http://rebcabin.github.com/</id>
   <author>
     <name><![CDATA[Brian Beckman (rebcabin = brianbec)]]></name>
@@ -575,7 +575,7 @@ covariance estimate, from the data, we get</p>
 \end{bmatrix}
  %]]&gt;</script>
 
-<p>plasibly close to the original (though a formal test, as mentioned, 
+<p>plausibly close to the original (though a formal test, as mentioned, 
 would be required to say quantitatively how much).</p>
 
 <p>Later, we have to figure out exactly <em>how</em> to sample a multivariate
