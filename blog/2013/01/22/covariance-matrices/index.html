@@ -396,7 +396,7 @@ by $N$ and dividing by $N-1$. Let</p>
 that it can be remembered without looking it up:</p>
 
 <script type="math/tex; mode=display">
-\mathcal{N}(x, y\,;\mu, \sigma) = P(x,y) =\\
+\mathcal{N}(x, y\,;\mu, \Sigma^2) := P(x,y) =\\
 \frac{1}{2\pi\left|\Sigma^2\right|^{1/2}}
 \exp
 \left({-
@@ -445,7 +445,7 @@ covariance estimate, from the data, we get</p>
  %]]></script>
 
 <p>plausibly close to the original (though a formal test, as mentioned, 
-would be required to say quantitatively how much).</p>
+would be required to say quantitatively how close).</p>
 
 <p>Later, we have to figure out exactly <em>how</em> to sample a multivariate
 Gaussian like this (hints: do the sampling in a new coordinate system
