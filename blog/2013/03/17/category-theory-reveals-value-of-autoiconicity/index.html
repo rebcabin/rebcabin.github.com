@@ -147,15 +147,16 @@ clients – for data privacy.</p>
 <p>Granted one might say “the difference is just a matter of degree.”
 True, but that’s like saying the difference between a rock and the
 entire Earth is just a matter of degree. That’s why the Lisps won’t
-die: it’s just plain <em>easier</em> to write remotable DSLs in Lisp, by <em>orders of
-magnitude</em>, and you <em>always</em> need remotable DSLs.</p>
+die: it’s just plain <em>easier</em> to write remotable DSLs in Lisp, by
+<em>orders of magnitude</em>, and you <em>always</em> need remotable DSLs. And
+remotable DSLs are enabled by distributed metaprogramming platforms.</p>
 
 <p>I argue that any sufficiently rich application will become a
-metaprogramming platform eventually, and will need all that stuff.
-Especially on the web, where code-remoting is a necessity – confer
-the massive amounts of machinery and years of work behind .NET
-Expressions for <code>IQueryable</code> and friends. Beautiful, it’s
-true, because the thinking and the engineering behind them were
+distributed metaprogramming platform eventually, and will need all
+that stuff. Especially on the web, where code-remoting is a necessity
+– confer the massive amounts of machinery and years of work behind
+.NET Expressions for <code>IQueryable</code> and friends. Beautiful,
+it’s true, because the thinking and the engineering behind them were
 first-rate and I was privileged to participate. But, if our mainstream
 languages had been Mathematica or some kinds of Lisp, remoting and
 rewriting would have been for-free; a “duh, obviously;” not even an
@@ -164,14 +165,14 @@ DSL-enabling infrastructure of .NET Expressions, they’re nothing but
 an implementation of quote, quasi-quote, and unquote for C#. All that
 work just to get <em>into</em> the mineshaft where the gold of DSLs lies.</p>
 
-<p>This entire screed is just an addendum to 
-<a href="http://en.wikipedia.org/wiki/Greenspun's_tenth_rule">Greenspun’s Tenth Rule</a>, 
-my asserting that
-the <em>specific</em> thing that these “sufficiently complicated C or Fortran”
-programs strive to find in their “ad-hoc, informally specified,
-bug-ridden, slow implementations of half of Common Lisp” – the
-specific half they need – is the half that enables DSLs, namely
-metaprogramming via quote, quasi-quote, and unquote.</p>
+<p>This entire screed is just an addendum to <a href="http://en.wikipedia.org/wiki/Greenspun's_tenth_rule">Greenspun’s Tenth
+Rule</a>, my
+asserting that the <em>specific</em> thing that these “sufficiently
+complicated C or Fortran” programs strive to find in their “ad-hoc,
+informally specified, bug-ridden, slow implementations of half of
+Common Lisp” – the specific half they need – is the half that
+enables DSLs, namely distributed, remotable metaprogramming via quote,
+quasi-quote, and unquote.</p>
 
 <!--
 That means you write code that rewrites code without excess machinery. That means that all of DSLs (Domain-Specific Languages), code remoting for affinity and privacy, optimizers, query planners, all the stuff that any sophisticated application eventually needs, are enabled out-of-the-box. With non-autoiconic languages, you have to write tons and tons and tons of machinery to get that done: reflection, object models for expressions, serializers, metadata managers, lexers, yaccers, compilers, decompilers. All standard or near standard, and equally unnecessary, because all of it does nothing more nor less than quote, quasi-quote, and unquote. 
