@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Philosophy | The Light Cone]]></title>
   <link href="http://rebcabin.github.com/blog/categories/philosophy/atom.xml" rel="self"/>
   <link href="http://rebcabin.github.com/"/>
-  <updated>2013-03-17T10:06:05-07:00</updated>
+  <updated>2013-03-17T10:16:34-07:00</updated>
   <id>http://rebcabin.github.com/</id>
   <author>
     <name><![CDATA[Brian Beckman (rebcabin = brianbec)]]></name>
@@ -25,8 +25,7 @@ format for data are identical. Add “quote” and you have instant
 metaprogramming built-in. That means that when you write code, you’re
 really writing a DSL (Domain-Specific Language), <em>always</em>. With
 non-autoiconic languages, e.g., all the C’s, Javas, Algols and
-Fortrans; Haskell and its ancestors Miranda, KRC, ans SASL; Scala, F#,
-and all the ML’s; that is, the mainstream, DSLs are a special case and
+Fortrans, that is, the mainstream, DSLs are a special case and
 require tons of enabling machinery like expression-object-models,
 serializers, lexers, yaccers, compilers, decompilers, metadata
 managers, and on and on. All standard or near standard, and all
