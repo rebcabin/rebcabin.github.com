@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Programming Languages | The Light Cone]]></title>
   <link href="http://rebcabin.github.com/blog/categories/programming-languages/atom.xml" rel="self"/>
   <link href="http://rebcabin.github.com/"/>
-  <updated>2013-03-17T10:42:23-07:00</updated>
+  <updated>2013-03-17T12:49:12-07:00</updated>
   <id>http://rebcabin.github.com/</id>
   <author>
     <name><![CDATA[Brian Beckman (rebcabin = brianbec)]]></name>
@@ -36,10 +36,24 @@ than quote, quasi-quote, and unquote.</p>
 F#, and all the ML’s, DSL programming is done via user-defined types.
 With these languages, DSL programming is not a special case, but
 remoting <em>is</em> still a special case requiring extra machinery. This is
-not a small thing, but really the crux of the argument. The real gold
-in the era of cloud programmability is DSL + remoting. I need to send
-expressions written in my DSLs to servers – for data affinity, and to
-clients – for data privacy.</p>
+not a small thing, but really the crux of the argument.
+The real gold in the era of cloud
+programmability is DSL + remoting. I need to send expressions written
+in my DSLs to servers – for data affinity, and to clients – for data
+privacy.
+Why is remoting a special case?  Because I don’t have quote and eval. Why not?
+This, I don’t know.  It must be a conscious decision on the part of language
+designers, because <em>all</em> these languages conspicuously lack quote and eval.
+I do not know the reason. Be that as it may…</p>
+
+<!--
+I think the reason for the separation between writing a DSL and
+remoting the expressions in your DSL in these languages is a subtle
+conflation of syntax with representation. Writing DSLs in, say,
+Miranda requires one syntax for defining the types of your DSL, and a
+separate syntax for defining functions that operate on instances of
+those types. I don't have one expression language for doing both,
+-->
 
 <p>Granted one might say “the difference is just a matter of degree.”
 True, but that’s like saying the difference between a rock and the
