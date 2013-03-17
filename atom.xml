@@ -4,7 +4,7 @@
   <title><![CDATA[The Light Cone]]></title>
   <link href="http://rebcabin.github.com/atom.xml" rel="self"/>
   <link href="http://rebcabin.github.com/"/>
-  <updated>2013-03-17T10:19:12-07:00</updated>
+  <updated>2013-03-17T10:24:39-07:00</updated>
   <id>http://rebcabin.github.com/</id>
   <author>
     <name><![CDATA[Brian Beckman (rebcabin = brianbec)]]></name>
@@ -32,7 +32,14 @@ managers, and on and on. All standard or near standard, and all
 equally unnecessary since none of it at bottom does any more nor less
 than quote, quasi-quote, and unquote.</p>
 
-<p>(With Haskell and its ancestors Miranda, KRC, and SASL; and with Scala, F#, and all the ML’s, DSL programming is done via user-defined types.  With these languages, DSL programming is not a special case, but remoting of expressions is still a special case requiring extra machinery.)</p>
+<p>With Haskell and its ancestors Miranda, KRC, and SASL; and with Scala,
+F#, and all the ML’s, DSL programming is done via user-defined types.
+With these languages, DSL programming is not a special case, but
+remoting is still a special case requiring extra machinery. This is
+not a small thing, but really the crux of the argument. The real gold
+in the era of cloud programmability is DSL + remoting. I need to send
+expressions written in my DSLs to servers – for data affinity, and to
+clients – for data privacy.</p>
 
 <p>Granted one might say “the difference is just a matter of degree.”
 True, but that’s like saying the difference between a rock and the
