@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Philosophy | The Light Cone]]></title>
   <link href="http://rebcabin.github.com/blog/categories/philosophy/atom.xml" rel="self"/>
   <link href="http://rebcabin.github.com/"/>
-  <updated>2013-03-17T10:28:47-07:00</updated>
+  <updated>2013-03-17T10:31:46-07:00</updated>
   <id>http://rebcabin.github.com/</id>
   <author>
     <name><![CDATA[Brian Beckman (rebcabin = brianbec)]]></name>
@@ -60,11 +60,12 @@ rewriting would have been for-free; a “duh, obviously;” not even an
 afterthought; but a built-in assumption. Reflecting on the whole
 DSL-enabling infrastructure of .NET Expressions, they’re nothing but
 an implementation of quote, quasi-quote, and unquote for C#. All that
-work just to get <em>into</em> the mineshaft where the gold of DSLs lies.</p>
+work just to get <em>into</em> the mineshaft where the gold of remotable DSLs
+lies.</p>
 
-<p>This entire screed is just an addendum to <a href="http://en.wikipedia.org/wiki/Greenspun's_tenth_rule">Greenspun’s Tenth
-Rule</a>, my
-asserting that the <em>specific</em> thing that these “sufficiently
+<p>This entire screed is just an addendum to
+<a href="http://en.wikipedia.org/wiki/Greenspun's_tenth_rule">Greenspun’s Tenth Rule</a>,
+my asserting that the <em>specific</em> thing that these “sufficiently
 complicated C or Fortran” programs strive to find in their “ad-hoc,
 informally specified, bug-ridden, slow implementations of half of
 Common Lisp” – the specific half they need – is the half that
