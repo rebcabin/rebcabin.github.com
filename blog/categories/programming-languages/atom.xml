@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Programming Languages | The Light Cone]]></title>
   <link href="http://rebcabin.github.com/blog/categories/programming-languages/atom.xml" rel="self"/>
   <link href="http://rebcabin.github.com/"/>
-  <updated>2013-03-17T10:24:39-07:00</updated>
+  <updated>2013-03-17T10:26:27-07:00</updated>
   <id>http://rebcabin.github.com/</id>
   <author>
     <name><![CDATA[Brian Beckman (rebcabin = brianbec)]]></name>
@@ -44,8 +44,8 @@ clients – for data privacy.</p>
 <p>Granted one might say “the difference is just a matter of degree.”
 True, but that’s like saying the difference between a rock and the
 entire Earth is just a matter of degree. That’s why the Lisps won’t
-die: it’s just plain <em>easier</em> to write DSLs in Lisp, by <em>orders of
-magnitude</em>, and you <em>always</em> need DSLs.</p>
+die: it’s just plain <em>easier</em> to write remotable DSLs in Lisp, by <em>orders of
+magnitude</em>, and you <em>always</em> need remotable DSLs.</p>
 
 <p>I argue that any sufficiently rich application will become a
 metaprogramming platform eventually, and will need all that stuff.
