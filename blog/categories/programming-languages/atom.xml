@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Programming Languages | The Light Cone]]></title>
   <link href="http://rebcabin.github.com/blog/categories/programming-languages/atom.xml" rel="self"/>
   <link href="http://rebcabin.github.com/"/>
-  <updated>2013-03-17T10:31:46-07:00</updated>
+  <updated>2013-03-17T10:35:13-07:00</updated>
   <id>http://rebcabin.github.com/</id>
   <author>
     <name><![CDATA[Brian Beckman (rebcabin = brianbec)]]></name>
@@ -35,7 +35,7 @@ than quote, quasi-quote, and unquote.</p>
 <p>With Haskell and its ancestors Miranda, KRC, and SASL; and with Scala,
 F#, and all the ML’s, DSL programming is done via user-defined types.
 With these languages, DSL programming is not a special case, but
-remoting is still a special case requiring extra machinery. This is
+remoting <em>is</em> still a special case requiring extra machinery. This is
 not a small thing, but really the crux of the argument. The real gold
 in the era of cloud programmability is DSL + remoting. I need to send
 expressions written in my DSLs to servers – for data affinity, and to
