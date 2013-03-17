@@ -1,0 +1,347 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Category Theory Reveals Value of Autoiconicity - The Light Cone</title>
+  <meta name="author" content="Brian Beckman (rebcabin = brianbec)">
+
+  
+  <meta name="description" content="Suddenly it hit me: Category Theory is to Math as Lisp is to Programming. I’ve always had an instinctive preference for autoiconic programming &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://rebcabin.github.com/blog/2013/03/17/category-theory-reveals-value-of-autoiconicity/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="The Light Cone" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript"
+   src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">The Light Cone</a></h1>
+  
+    <h2>Where past and future meet at a point in spacetime</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:rebcabin.github.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Category Theory Reveals Value of Autoiconicity</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-17T08:06:00-07:00" pubdate data-updated="true">Mar 17<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Suddenly it hit me: Category Theory is to Math as Lisp is to Programming. I’ve always had an instinctive preference for autoiconic programming languages over non-autoiconic, and now I know why.</p>
+
+<p>An autoiconic language is one in which the format for code and the
+format for data are identical. Add “quote” and you have instant
+metaprogramming built-in. That means that when you write code, you’re
+really writing a DSL (Domain-Specific Language), <em>always</em>. With
+non-autoiconic languages, e.g., all the C’s, Javas, Algols and
+Fortrans; Haskell and its ancestors Miranda, KRC, ans SASL; Scala, F#,
+and all the ML’s; that is, the mainstream, DSLs are a special case and
+require tons of enabling machinery like expression-object-models,
+serializers, lexers, yaccers, compilers, decompilers, metadata
+managers, and on and on. All standard or near standard, and all
+equally unnecessary since none of it at bottom does any more nor less
+than quote, quasi-quote, and unquote.</p>
+
+<p>Granted one might say “the difference is just a matter of degree.”
+True, but that’s like saying the difference between a rock and the
+entire Earth is just a matter of degree. That’s why the Lisps won’t
+die: it’s just plain <em>easier</em> to write DSLs in Lisp, by <em>orders of
+magnitude</em>, and you <em>always</em> need DSLs.</p>
+
+<p>I argue that any sufficiently rich application will become a
+metaprogramming platform eventually, and will need all that stuff.
+Especially on the web, where code-remoting is a necessity – confer
+the massive amounts of machinery and years of work behind .NET
+Expressions for <code>IQueryable</code> and friends. Beautiful, it’s
+true, because the thinking and the engineering behind them were
+first-rate and I was privileged to participate. But, if our mainstream
+languages had been Mathematica or some kinds of Lisp, remoting and
+rewriting would have been for-free; a “duh, obviously;” not even an
+afterthought; but a built-in assumption. Reflecting on the whole
+DSL-enabling infrastructure of .NET Expressions, they’re nothing but
+an implementation of quote, quasi-quote, and unquote for C#. All that
+work just to get <em>into</em> the mineshaft where the gold of DSLs lies.</p>
+
+<p>This entire screed is just an addendum to 
+<a href="http://en.wikipedia.org/wiki/Greenspun's_tenth_rule">Greenspun’s Tenth Rule</a>, 
+my asserting that
+the <em>specific</em> thing that these “sufficiently complicated C or Fortran”
+programs strive to find in their “ad-hoc, informally specified,
+bug-ridden, slow implementations of half of Common Lisp” – the
+specific half they need – is the half that enables DSLs, namely
+metaprogramming via quote, quasi-quote, and unquote.</p>
+
+<!--
+That means you write code that rewrites code without excess machinery. That means that all of DSLs (Domain-Specific Languages), code remoting for affinity and privacy, optimizers, query planners, all the stuff that any sophisticated application eventually needs, are enabled out-of-the-box. With non-autoiconic languages, you have to write tons and tons and tons of machinery to get that done: reflection, object models for expressions, serializers, metadata managers, lexers, yaccers, compilers, decompilers. All standard or near standard, and equally unnecessary, because all of it does nothing more nor less than quote, quasi-quote, and unquote. 
+-->
+
+<p>What does this have to do with Category Theory? That is a use of
+autoiconicity in mathematics. It’s uses the language of mathematics to
+explain mathematics. Every branch of mathematics is just a DSL of
+Category Theory.</p>
+
+<p>All this philosophizing came about because <a href="http://blog.fogus.me/2012/07/09/clojure-obscura/">Fogus, of “Joy of Clojure”</a> recently tweeted about <a href="http://mitpress.mit.edu/sicp/">SICP – Structure and Interpretation of Computer Programs</a>, which is now influencing at least its second or third generation of developers. That reminded me of <a href="http://www.cs.kent.ac.uk/people/staff/dat/miranda/wadler87.pdf">Philip Wadler’s critique of SICP</a> and got me thinking why I always thought that, outside of his pedagogical context, Wadler’s argument was weak. Then I remembered that <a href="http://www.johndcook.com/blog/">John D. Cook, of “The Endeavor”</a> sent around a link to a <a href="http://arxiv.org/pdf/1302.6946.pdf">deeply intriguing new book by David I. Spivak on category theory</a>, and it hit me.</p>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Brian Beckman (rebcabin = brianbec)</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-17T08:06:00-07:00" pubdate data-updated="true">Mar 17<span>th</span>, 2013</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/category-theory/'>Category Theory</a>, <a class='category' href='/blog/categories/philosophy/'>Philosophy</a>, <a class='category' href='/blog/categories/programming-languages/'>Programming Languages</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://rebcabin.github.com/blog/2013/03/17/category-theory-reveals-value-of-autoiconicity/" data-via="lorentzframe" data-counturl="http://rebcabin.github.com/blog/2013/03/17/category-theory-reveals-value-of-autoiconicity/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/02/04/welfords-better-formula/" title="Previous Post: Welford's Way to Kalman City">&laquo; Welford's Way to Kalman City</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/17/category-theory-reveals-value-of-autoiconicity/">Category Theory Reveals Value of Autoiconicity</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/02/04/welfords-better-formula/">Welford's Way to Kalman City</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/22/covariance-matrices/">Incremental Covariance</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/19/asynchronous-lazy-lists/">Asynchronous Lazy Lists</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/13/fast-arbitrary-non-uniform-randoms/">Fast Arbitrary Non-Uniform Randoms</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/rebcabin">@rebcabin</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'rebcabin',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+<section>
+  <h1>Latest Tweets</h1>
+  <ul id="tweets">
+    <li class="loading">Status updating...</li>
+  </ul>
+  <script type="text/javascript">
+    $.domReady(function(){
+      getTwitterFeed("lorentzframe", 4, false);
+    });
+  </script>
+  <script src="/javascripts/twitter.js" type="text/javascript"> </script>
+  
+    <a href="http://twitter.com/lorentzframe" class="twitter-follow-button" data-show-count="false">Follow @lorentzframe</a>
+  
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Brian Beckman (rebcabin = brianbec) -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

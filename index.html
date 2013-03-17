@@ -9,8 +9,7 @@
   <meta name="author" content="Brian Beckman (rebcabin = brianbec)">
 
   
-  <meta name="description" content="Should you square differences or should you difference squares?
-Both methods harbor algebraically correct ways to compute incremental (co)variance, &hellip;">
+  <meta name="description" content="Suddenly it hit me: Category Theory is to Math as Lisp is to Programming. I’ve always had an instinctive preference for autoiconic programming &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -96,6 +95,96 @@ Both methods harbor algebraically correct ways to compute incremental (co)varian
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/03/17/category-theory-reveals-value-of-autoiconicity/">Category Theory Reveals Value of Autoiconicity</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-17T08:06:00-07:00" pubdate data-updated="true">Mar 17<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Suddenly it hit me: Category Theory is to Math as Lisp is to Programming. I’ve always had an instinctive preference for autoiconic programming languages over non-autoiconic, and now I know why.</p>
+
+<p>An autoiconic language is one in which the format for code and the
+format for data are identical. Add “quote” and you have instant
+metaprogramming built-in. That means that when you write code, you’re
+really writing a DSL (Domain-Specific Language), <em>always</em>. With
+non-autoiconic languages, e.g., all the C’s, Javas, Algols and
+Fortrans; Haskell and its ancestors Miranda, KRC, ans SASL; Scala, F#,
+and all the ML’s; that is, the mainstream, DSLs are a special case and
+require tons of enabling machinery like expression-object-models,
+serializers, lexers, yaccers, compilers, decompilers, metadata
+managers, and on and on. All standard or near standard, and all
+equally unnecessary since none of it at bottom does any more nor less
+than quote, quasi-quote, and unquote.</p>
+
+<p>Granted one might say “the difference is just a matter of degree.”
+True, but that’s like saying the difference between a rock and the
+entire Earth is just a matter of degree. That’s why the Lisps won’t
+die: it’s just plain <em>easier</em> to write DSLs in Lisp, by <em>orders of
+magnitude</em>, and you <em>always</em> need DSLs.</p>
+
+<p>I argue that any sufficiently rich application will become a
+metaprogramming platform eventually, and will need all that stuff.
+Especially on the web, where code-remoting is a necessity – confer
+the massive amounts of machinery and years of work behind .NET
+Expressions for <code>IQueryable</code> and friends. Beautiful, it’s
+true, because the thinking and the engineering behind them were
+first-rate and I was privileged to participate. But, if our mainstream
+languages had been Mathematica or some kinds of Lisp, remoting and
+rewriting would have been for-free; a “duh, obviously;” not even an
+afterthought; but a built-in assumption. Reflecting on the whole
+DSL-enabling infrastructure of .NET Expressions, they’re nothing but
+an implementation of quote, quasi-quote, and unquote for C#. All that
+work just to get <em>into</em> the mineshaft where the gold of DSLs lies.</p>
+
+<p>This entire screed is just an addendum to 
+<a href="http://en.wikipedia.org/wiki/Greenspun's_tenth_rule">Greenspun’s Tenth Rule</a>, 
+my asserting that
+the <em>specific</em> thing that these “sufficiently complicated C or Fortran”
+programs strive to find in their “ad-hoc, informally specified,
+bug-ridden, slow implementations of half of Common Lisp” – the
+specific half they need – is the half that enables DSLs, namely
+metaprogramming via quote, quasi-quote, and unquote.</p>
+
+<!--
+That means you write code that rewrites code without excess machinery. That means that all of DSLs (Domain-Specific Languages), code remoting for affinity and privacy, optimizers, query planners, all the stuff that any sophisticated application eventually needs, are enabled out-of-the-box. With non-autoiconic languages, you have to write tons and tons and tons of machinery to get that done: reflection, object models for expressions, serializers, metadata managers, lexers, yaccers, compilers, decompilers. All standard or near standard, and equally unnecessary, because all of it does nothing more nor less than quote, quasi-quote, and unquote. 
+-->
+
+<p>What does this have to do with Category Theory? That is a use of
+autoiconicity in mathematics. It’s uses the language of mathematics to
+explain mathematics. Every branch of mathematics is just a DSL of
+Category Theory.</p>
+
+<p>All this philosophizing came about because <a href="http://blog.fogus.me/2012/07/09/clojure-obscura/">Fogus, of “Joy of Clojure”</a> recently tweeted about <a href="http://mitpress.mit.edu/sicp/">SICP – Structure and Interpretation of Computer Programs</a>, which is now influencing at least its second or third generation of developers. That reminded me of <a href="http://www.cs.kent.ac.uk/people/staff/dat/miranda/wadler87.pdf">Philip Wadler’s critique of SICP</a> and got me thinking why I always thought that, outside of his pedagogical context, Wadler’s argument was weak. Then I remembered that <a href="http://www.johndcook.com/blog/">John D. Cook, of “The Endeavor”</a> sent around a link to a <a href="http://arxiv.org/pdf/1302.6946.pdf">deeply intriguing new book by David I. Spivak on category theory</a>, and it hit me.</p>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1778,6 +1867,10 @@ in the CDF file here: <a href="https://dl.dropbox.com/u/1997638/LazyLambda003.cd
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/03/17/category-theory-reveals-value-of-autoiconicity/">Category Theory Reveals Value of Autoiconicity</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/02/04/welfords-better-formula/">Welford&#8217;s Way to Kalman City</a>
       </li>
     
@@ -1791,10 +1884,6 @@ in the CDF file here: <a href="https://dl.dropbox.com/u/1997638/LazyLambda003.cd
     
       <li class="post">
         <a href="/blog/2012/12/13/fast-arbitrary-non-uniform-randoms/">Fast Arbitrary Non-Uniform Randoms</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/12/08/anonymous-memoizing-lazy-lists/">Anonymous Memoizing Lazy Lists</a>
       </li>
     
   </ul>
