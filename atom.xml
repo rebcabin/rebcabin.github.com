@@ -4,7 +4,7 @@
   <title><![CDATA[The Light Cone]]></title>
   <link href="http://rebcabin.github.com/atom.xml" rel="self"/>
   <link href="http://rebcabin.github.com/"/>
-  <updated>2013-03-17T10:36:22-07:00</updated>
+  <updated>2013-03-17T10:37:31-07:00</updated>
   <id>http://rebcabin.github.com/</id>
   <author>
     <name><![CDATA[Brian Beckman (rebcabin = brianbec)]]></name>
@@ -69,7 +69,7 @@ my asserting that the <em>specific</em> thing that these “sufficiently
 complicated C or Fortran” programs strive to find in their “ad-hoc,
 informally specified, bug-ridden, slow implementations of half of
 Common Lisp” – the specific half they need – is the half that
-enables DSLs, namely distributed, remotable metaprogramming via quote,
+enables remotable DSLs, namely distributed, remotable metaprogramming via quote,
 quasi-quote, and unquote.</p>
 
 <!--
