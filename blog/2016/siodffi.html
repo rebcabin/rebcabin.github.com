@@ -1,187 +1,66 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
-<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
-<meta name=ProgId content=Word.Document>
-<meta name=Generator content="Microsoft Word 9">
-<meta name=Originator content="Microsoft Word 9">
-<link rel=File-List href="./SiodFFI_files/filelist.xml">
-<title>Hostile Foreign-Function Interface in SIOD</title>
-<!--[if gte mso 9]><xml>
- <o:DocumentProperties>
-  <o:Author>brianbec</o:Author>
-  <o:LastAuthor>brianbec</o:LastAuthor>
-  <o:Revision>33</o:Revision>
-  <o:TotalTime>431</o:TotalTime>
-  <o:Created>2000-01-12T22:29:00Z</o:Created>
-  <o:LastSaved>2000-01-12T23:26:00Z</o:LastSaved>
-  <o:Pages>5</o:Pages>
-  <o:Words>2496</o:Words>
-  <o:Characters>14228</o:Characters>
-  <o:Company>Microsoft Corp.</o:Company>
-  <o:Lines>118</o:Lines>
-  <o:Paragraphs>28</o:Paragraphs>
-  <o:CharactersWithSpaces>17472</o:CharactersWithSpaces>
-  <o:Version>9.2720</o:Version>
- </o:DocumentProperties>
-</xml><![endif]-->
-<style>
-<!--
- /* Font Definitions */
-@font-face
-	{font-family:"MS Mincho";
-	panose-1:2 2 6 9 4 2 5 8 3 4;
-	mso-font-alt:"\FF2D\FF33 \660E\671D";
-	mso-font-charset:128;
-	mso-generic-font-family:modern;
-	mso-font-pitch:fixed;
-	mso-font-signature:-1610612033 1757936891 16 0 131231 0;}
-@font-face
-	{font-family:Garamond;
-	panose-1:2 2 4 4 3 3 1 1 8 3;
-	mso-font-charset:0;
-	mso-generic-font-family:roman;
-	mso-font-pitch:variable;
-	mso-font-signature:647 0 0 0 159 0;}
-@font-face
-	{font-family:"\@MS Mincho";
-	panose-1:2 2 6 9 4 2 5 8 3 4;
-	mso-font-charset:128;
-	mso-generic-font-family:modern;
-	mso-font-pitch:fixed;
-	mso-font-signature:-1610612033 1757936891 16 0 131231 0;}
- /* Style Definitions */
-p.MsoNormal, li.MsoNormal, div.MsoNormal
-	{mso-style-update:auto;
-	mso-style-parent:"";
-	margin:0in;
-	margin-bottom:.0001pt;
-	mso-pagination:widow-orphan;
-	mso-layout-grid-align:none;
-	text-autospace:none;
-	font-size:11.0pt;
-	font-family:Garamond;
-	mso-fareast-font-family:"Times New Roman";
-	mso-bidi-font-family:"Courier New";}
-h1
-	{mso-style-next:Normal;
-	margin-top:12.0pt;
-	margin-right:0in;
-	margin-bottom:3.0pt;
-	margin-left:0in;
-	mso-pagination:widow-orphan;
-	page-break-after:avoid;
-	mso-outline-level:1;
-	mso-layout-grid-align:none;
-	text-autospace:none;
-	font-size:16.0pt;
-	font-family:Arial;
-	mso-font-kerning:16.0pt;
-	font-weight:bold;}
-h2
-	{mso-style-next:Normal;
-	margin-top:12.0pt;
-	margin-right:0in;
-	margin-bottom:3.0pt;
-	margin-left:0in;
-	mso-pagination:widow-orphan;
-	page-break-after:avoid;
-	mso-outline-level:2;
-	mso-layout-grid-align:none;
-	text-autospace:none;
-	font-size:14.0pt;
-	font-family:Arial;
-	font-weight:bold;
-	font-style:italic;}
-h3
-	{mso-style-next:Normal;
-	margin-top:12.0pt;
-	margin-right:0in;
-	margin-bottom:3.0pt;
-	margin-left:0in;
-	mso-pagination:widow-orphan;
-	page-break-after:avoid;
-	mso-outline-level:3;
-	mso-layout-grid-align:none;
-	text-autospace:none;
-	font-size:13.0pt;
-	font-family:Arial;
-	font-weight:bold;}
-a:link, span.MsoHyperlink
-	{color:blue;
-	text-decoration:underline;
-	text-underline:single;}
-a:visited, span.MsoHyperlinkFollowed
-	{color:purple;
-	text-decoration:underline;
-	text-underline:single;}
-p.MsoPlainText, li.MsoPlainText, div.MsoPlainText
-	{margin:0in;
-	margin-bottom:.0001pt;
-	mso-pagination:widow-orphan;
-	mso-layout-grid-align:none;
-	text-autospace:none;
-	font-size:11.0pt;
-	font-family:"Courier New";
-	mso-fareast-font-family:"Times New Roman";}
-p
-	{margin-right:0in;
-	mso-margin-top-alt:auto;
-	mso-margin-bottom-alt:auto;
-	margin-left:0in;
-	mso-pagination:widow-orphan;
-	mso-layout-grid-align:none;
-	text-autospace:none;
-	font-size:12.0pt;
-	font-family:"Times New Roman";
-	mso-fareast-font-family:"Times New Roman";
-	mso-bidi-font-family:"Courier New";}
-pre
-	{margin:0in;
-	margin-bottom:.0001pt;
-	mso-pagination:widow-orphan;
-	tab-stops:45.8pt 91.6pt 137.4pt 183.2pt 229.0pt 274.8pt 320.6pt 366.4pt 412.2pt 458.0pt 503.8pt 549.6pt 595.4pt 641.2pt 687.0pt 732.8pt;
-	mso-layout-grid-align:none;
-	text-autospace:none;
-	font-size:11.0pt;
-	font-family:"Courier New";
-	mso-fareast-font-family:"Courier New";}
-tt
-	{mso-ascii-font-family:"Courier New";
-	mso-fareast-font-family:"Courier New";
-	mso-hansi-font-family:"Courier New";
-	mso-bidi-font-family:"Courier New";}
-p.CodeBlock, li.CodeBlock, div.CodeBlock
-	{mso-style-name:"Code Block";
-	mso-style-update:auto;
-	mso-style-parent:"Plain Text";
-	margin-top:0in;
-	margin-right:.5in;
-	margin-bottom:0in;
-	margin-left:.5in;
-	margin-bottom:.0001pt;
-	mso-pagination:widow-orphan;
-	background:#F3F3F3;
-	mso-layout-grid-align:none;
-	text-autospace:none;
-	font-size:9.0pt;
-	mso-bidi-font-size:11.0pt;
-	font-family:"Courier New";
-	mso-fareast-font-family:"MS Mincho";}
-@page Section1
-	{size:8.5in 11.0in;
-	margin:1.0in 1.25in 1.0in 1.25in;
-	mso-header-margin:.5in;
-	mso-footer-margin:.5in;
-	mso-paper-source:0;}
-div.Section1
-	{page:Section1;}
--->
-</style>
-<!--[if gte mso 9]><xml>
- <o:shapedefaults v:ext="edit" spidmax="1027"/>
-</xml><![endif]--><!--[if gte mso 9]><xml>
- <o:shapelayout v:ext="edit">
-  <o:idmap v:ext="edit" data="1"/>
- </o:shapelayout></xml><![endif]-->
+  <meta charset="utf-8">
+  <title>Category Theory Reveals Value of Autoiconicity - The Light Cone</title>
+  <meta name="author" content="Brian Beckman (rebcabin = brianbec)">
+
+  
+  <meta name="description" content="Suddenly it hit me: Category Theory is to Math as Lisp is to Programming. I’ve always had an instinctive preference for autoiconic programming &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://rebcabin.github.com/blog/2013/03/17/category-theory-reveals-value-of-autoiconicity/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="The Light Cone" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript"
+   src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+  
+
 </head>
 
 <body lang=EN-US link=blue vlink=purple style='tab-interval:.5in'><!--'"</title></head>-->
