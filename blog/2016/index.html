@@ -1,56 +1,209 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<style>
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote {
+    margin: 0;
+    padding: 0;
+}
+body {
+    font-family: "Helvetica Neue", Helvetica, "Hiragino Sans GB", Arial, sans-serif;
+    font-size: 13px;
+    line-height: 18px;
+    color: #737373;
+    background-color: white;
+    margin: 10px 13px 10px 13px;
+}
+table {
+	margin: 10px 0 15px 0;
+	border-collapse: collapse;
+}
+td,th {	
+	border: 1px solid #ddd;
+	padding: 3px 10px;
+}
+th {
+	padding: 5px 10px;	
+}
+
+a {
+    color: #0069d6;
+}
+a:hover {
+    color: #0050a3;
+    text-decoration: none;
+}
+a img {
+    border: none;
+}
+p {
+    margin-bottom: 9px;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: #404040;
+    line-height: 36px;
+}
+h1 {
+    margin-bottom: 18px;
+    font-size: 30px;
+}
+h2 {
+    font-size: 24px;
+}
+h3 {
+    font-size: 18px;
+}
+h4 {
+    font-size: 16px;
+}
+h5 {
+    font-size: 14px;
+}
+h6 {
+    font-size: 13px;
+}
+hr {
+    margin: 0 0 19px;
+    border: 0;
+    border-bottom: 1px solid #ccc;
+}
+blockquote {
+    padding: 13px 13px 21px 15px;
+    margin-bottom: 18px;
+    font-family:georgia,serif;
+    font-style: italic;
+}
+blockquote:before {
+    content:"\201C";
+    font-size:40px;
+    margin-left:-10px;
+    font-family:georgia,serif;
+    color:#eee;
+}
+blockquote p {
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 18px;
+    margin-bottom: 0;
+    font-style: italic;
+}
+code, pre {
+    font-family: Monaco, Andale Mono, Courier New, monospace;
+}
+code {
+    background-color: #fee9cc;
+    color: rgba(0, 0, 0, 0.75);
+    padding: 1px 3px;
+    font-size: 12px;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+}
+pre {
+    display: block;
+    padding: 14px;
+    margin: 0 0 18px;
+    line-height: 16px;
+    font-size: 11px;
+    border: 1px solid #d9d9d9;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+pre code {
+    background-color: #fff;
+    color:#737373;
+    font-size: 11px;
+    padding: 0;
+}
+sup {
+    font-size: 0.83em;
+    vertical-align: super;
+    line-height: 0;
+}
+* {
+	-webkit-print-color-adjust: exact;
+}
+@media screen and (min-width: 914px) {
+    body {
+        width: 854px;
+        margin:10px auto;
+    }
+}
+@media print {
+	body,code,pre code,h1,h2,h3,h4,h5,h6 {
+		color: black;
+	}
+	table, pre {
+		page-break-inside: avoid;
+	}
+}
+</style>
+<title>Calling the C world from the Scheme World</title>
+
+</head>
+<body>
 <h1>Calling the C world from the Scheme World</h1>
 
-<p class=MsoNormal>A brief essay, with examples, by<span style='font-size:10.0pt;
-mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+<p>A brief essay, with examples, by</p>
 
-<p class=MsoNormal>Brian Beckman</p>
+<p>Brian Beckman</p>
 
-<p class=MsoNormal>Updated 12 January 2000 (thanks to John D. Corbett for
-probing questions)<span style='font-size:10.0pt;mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+<p>Updated 12 January 2000 (thanks to John D. Corbett for
+probing questions)</p>
 
-<p class=MsoNormal>Original 19 August 1999<span style='font-size:10.0pt;
-mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+<p>Original 19 August 1999</p>
 
-<p class=MsoNormal><a href="mailto:brianbec@hotmail.com">brianbec@hotmail.com</a><span
-style='font-size:10.0pt;mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+<p>brianbec@hotmail.com</p>
 
 <h2>What are we trying to do?</h2>
 
-<p class=MsoNormal>We'd like to call programs written in C and C++ from
+<p>We'd like to call programs written in C and C++ from
 programs written in Scheme. You thought I was going to say &quot;and <i>vice
 versa</i>&quot;, but that's not entirely true. Some C programs call other C
 programs through explicit <em>function pointers</em><em><span style='font-style:
 normal'>, or</span></em> <em>callbacks</em>. The only case in which we need C
 to call Scheme is the case of callbacks. In other words, we want to call C and
-C++ from Scheme and we want write our callbacks from C and C++ in Scheme. <span
-style='font-size:10.0pt;mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+C++ from Scheme and we want write our callbacks from C and C++ in Scheme.</p>
 
-<p class=MsoNormal>To be a bit more blunt about it, we want Scheme to be in
+<p>To be a bit more blunt about it, we want Scheme to be in
 charge, and we want C and C++ programs to be the unwitting slaves of Scheme. In
 other words, we'd like our Scheme to be able to call <em>any</em> C/++ code
 whether that code was ever intended to be called by some other programming
 system. And, we want our methods to scale to real-world C/++ programs. For
-example, we'd like to call kernel32.dll and oleaut32.dll from Scheme code. <span
-style='font-size:10.0pt;mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+example, we'd like to call kernel32.dll and oleaut32.dll from Scheme code.</p>
 
-<p class=MsoNormal>We can expand our ambitions to C++ vtables and to COM. If we
+<p>We can expand our ambitions to C++ vtables and to COM. If we
 can call C, we ought to be able to call through a vtable, which is just an
 array of (non-callback) function pointers. So, our class of unwitting slaves
 includes all of C++ and COM, including OLE Automation Servers, because all of
 these are based on vtables. From now on, then, I'll write “C&quot; and mean “C
 and C++ and COM and OLE Automation&quot; because we can handle all these cases
-in the same way. <span style='font-size:10.0pt;mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+in the same way.</p>
 
-<p class=MsoNormal>We require <em>only</em> that the target C code be packaged
+<p>We require <em>only</em> that the target C code be packaged
 in a DLL, or Dynamically Linked Library, and that the DLL <em>export</em> its
 entry points symbolically. DLLs are a very general standard for symbolic
 linking at runtime in the C-programming world on Microsoft platforms like
 Windows. Instead of using the operating system's symbolic linking loader, we'll
 just gin up our own inside an implementation of Scheme. This is how we're going
 to call C functions in DLLs. <span style='font-size:10.0pt;mso-bidi-font-size:
-11.0pt'><o:p></o:p></span></p>
+11.0pt'>&lt;o:p>&lt;/o:p></span></p>
 
-<p class=MsoNormal>All that said, this is just a demonstration. We're not
+<p>All that said, this is just a demonstration. We're not
 actually trying to make an industrial-strength, shippable Scheme product that
 can call C. Instead, we're trying to demonstrate solutions to the
 &quot;hard&quot; problems of callbacks and transformations among C types to
@@ -60,41 +213,39 @@ theory: we show actual solutions to these problems in real, scalable code, and
 we call big, hairy DLLs like kernel32.dll and oleaut32.dll directly, with no
 glue code written in C, and we’ve stressed this by calling millions of
 iterations over the “hard” bits. <span style='font-size:10.0pt;mso-bidi-font-size:
-11.0pt'><o:p></o:p></span></p>
+11.0pt'>&lt;o:p>&lt;/o:p></span></p>
 
 <h2>Why would you want to do that?</h2>
 
-<p class=MsoNormal>Up front, let me say that I'm not trying to advertise or
-proselytize or push my work in the slightest way.<span style="mso-spacerun:
-yes">  </span>I built it for my own reasons and just thought some other Scheme
-and Siod users might find it amusing if not useful.<span style="mso-spacerun:
-yes">  </span></p>
+<p>Up front, let me say that I'm not trying to advertise or
+proselytize or push my work in the slightest way.I built it for my own reasons and just thought some other Scheme
+and Siod users might find it amusing if not useful.</p>
 
-<p class=MsoNormal>C is a wonderful language for writing libraries of
+<p>C is a wonderful language for writing libraries of
 special-purpose and high-performance components. It's a lousy language for algorithms,
 data structures, scripting, distributed command and control, experimentation,
 prototyping, learning by doing, and so on. That is, it’s so-so when you need
 lots of flexibility and elbow room or when you need to focus on the application
 domain. C forces you to do all your own pipe-fitting and resource management,
 as well as to invent data formats and write custom I/O code for your
-application data. </p>
+application data.</p>
 
-<p class=MsoNormal>Scheme is great for flexibility and elbow room and for
+<p>Scheme is great for flexibility and elbow room and for
 maximizing the impact of your precious programming hours by taking care of data
 formats, types, and resources for you. But Scheme is not so good for special-purpose,
-high-performance libraries. </p>
+high-performance libraries.</p>
 
-<p class=MsoNormal>So, let's use C for what it's good for and Scheme for what
+<p>So, let's use C for what it's good for and Scheme for what
 it's good for. Let's also decide that we want to use all kinds of C libraries
 that might only have been intended to be called from other C programs. We want
 to be able to use libraries tomorrow we haven’t thought about today without
 having to drop everything and invent new, abstract wrappers for them. So we
 need to make our Scheme smart enough to fool C into thinking it's being called
-by C. This isn't as hard as it sounds. </p>
+by C. This isn't as hard as it sounds.</p>
 
 <h2>C isn't Safe; how can you call it?</h2>
 
-<p class=MsoNormal>Everyone knows that Scheme is safer than C. Most
+<p>Everyone knows that Scheme is safer than C. Most
 memory-corruption bugs are simply impossible in Scheme, and they're quite easy
 in C. In fact, C is no safer than assembly language, and it's that way on
 purpose. C is meant for hardcore programming close to the machine. While it has
@@ -102,24 +253,25 @@ nice abstraction features like static type-checking and object-oriented
 programming, it <em>always</em> gives you a way to break the rules when you
 need to do. If we're going to call arbitrary C code from Scheme, we need to
 deal with the fact that C code doesn't have anything like Scheme's notion of
-safety. </p>
+safety.</p>
 
-<p class=MsoNormal>We have to open holes in Scheme's safety nets, but we can
+<p>We have to open holes in Scheme's safety nets, but we can
 close them all up on the Scheme side (even though we haven't done that
 completely in this demonstration package). This means that we can do all sorts
 of potentially unsafe things in some isolated bits of Scheme code, and we can
 stress, debug, test, and quarantine all the unsafe code on the other side of a
 well-defined fence. We'll show lots more on this below. <span style='font-size:
-10.0pt;mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+10.0pt;mso-bidi-font-size:11.0pt'>&lt;o:p>&lt;/o:p></span></p>
 
 <h2>What is the C World?</h2>
 
-<p class=MsoNormal>This is best shown by example. Consider the following C
-program: <span style='font-size:10.0pt;mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+
+<p>This is best shown by example. Consider the following C
+program:</p>
 
 <pre>
-#include <stdio.h>
-#include <string.h<
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
  
 __declspec (dllexport) int __stdcall    
 TestVictim0 () {
@@ -143,16 +295,16 @@ TVcallback (int i1, int i2, PFII f) {
     }
 </pre>
 
-<p class=MsoNormal>That is source code for a little DLL that has four exports, <tt><span
+
+<p>That is source code for a little DLL that has four exports, <tt><span
 style='font-size:10.0pt;font-family:"Courier New"'>TestVictim0</span></tt>, <tt><span
 style='font-size:10.0pt;font-family:"Courier New"'>TV4</span></tt>, <tt><span
 style='font-size:10.0pt;font-family:"Courier New"'>TV5cdecl</span></tt>, and <tt><span
 style='font-size:10.0pt;font-family:"Courier New"'>TVcallback</span></tt>.
 Trust me, the methods we develop here work for very big DLLs, like kernel32.dll
-and oleaut32.dll, and we show it below. <span style='font-size:10.0pt;
-mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+and oleaut32.dll, and we show it below.</p>
 
-<p class=MsoNormal>This DLL is completely in the C world. There is nothing in
+<p>This DLL is completely in the C world. There is nothing in
 here about Scheme-like types. These exports give and take machine-word
 integers; strings, as machine-level addresses; and functions as machine-level
 addresses. All C-like stuff. Also, some of the entry points are cdecls, i.e.,
@@ -161,17 +313,16 @@ pops arguments. The former have the advantage of flexibility, that is, you can
 implement functions of variable arity, like printf, using cdecls. The latter
 have the advantage of brevity: call sites do not need to take up space with
 argument-popping instructions. <span style='font-size:10.0pt;mso-bidi-font-size:
-11.0pt'><o:p></o:p></span></p>
+11.0pt'>&lt;o:p>&lt;/o:p></span></p>
 
-<p class=MsoNormal>If we can call cdecls and stdcalls with ints, strings, and
+<p>If we can call cdecls and stdcalls with ints, strings, and
 function pointers, we will have a sizeable fraction of the C world covered.
 Further, we argue, we've got all the hard cases covered and the rest is
-straightforward. <span style='font-size:10.0pt;mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+straightforward.</p>
 
-<h2 style='tab-stops:45.8pt 91.6pt 137.4pt 183.2pt 229.0pt 274.8pt 320.6pt 366.4pt 412.2pt 458.0pt 503.8pt 549.6pt 595.4pt 641.2pt 687.0pt 732.8pt'>What
-is the Scheme World?</h2>
+<h2>What is the Scheme World?</h2>
 
-<p class=MsoNormal>By example, once again. What should calls to the entry
+<p>By example, once again. What should calls to the entry
 points above look like? A very simple, but surprisingly useful assumption is that
 C functions return machine words, which, on 32-bit architectures, are DWORDS or
 unsigned longs. The C language permits a function to &quot;return a
@@ -179,9 +330,9 @@ struct&quot;, that is, an aggregate much larger than 32 bits. But, this
 facility is not used very often in practice. Furthermore, compilers would be
 likely to implement the facility by putting the data somewhere and having the
 function return a pointer in a DWORD. <span style='font-size:10.0pt;mso-bidi-font-size:
-11.0pt'><o:p></o:p></span></p>
+11.0pt'>&lt;o:p>&lt;/o:p></span></p>
 
-<p class=MsoNormal>The upshot is that we may cover the vast majority of
+<p>The upshot is that we may cover the vast majority of
 industrially important cases simply by assuming that C functions return DWORDs.
 This makes the Scheme &quot;superglue&quot; easier. The &quot;superglue&quot;
 is the generic C code we need to write as part of the Scheme implementation to
@@ -189,36 +340,46 @@ extend it so it can call arbitrary C code. This is different from special-purpos
 &quot;glue&quot; that would extend Scheme so it could call a particular C
 function. If you haven't gathered it by now, we eschew any use of
 &quot;glue&quot; in favor of &quot;superglue&quot;. <span style='font-size:
-10.0pt;mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+10.0pt;mso-bidi-font-size:11.0pt'>&lt;o:p>&lt;/o:p></span></p>
 
-<p class=MsoNormal>All that said, here is a real trace of some calls from
+<p>All that said, here is a real trace of some calls from
 Scheme, through Superglue, to the DLL shown above. The first one is easy to
 understand--the function returns 42, which superglue turns from a C number into
 a Scheme number. The next two return addresses, interepreted as Scheme numbers.
 To get at the data inside, we need some superglue for converting from addresses
 in the C world into values in the Scheme world. The last one converts the
 Scheme closure into a C function (by dyanmically painting code bytes in
-memory), calls it, and returns the answer. <span style='font-size:10.0pt;
-mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+memory), calls it, and returns the answer.</p>
 
-<pre>(TestVictim0) --&gt; 42</pre><pre>(TV4 &quot;Hello World&quot;) --&gt; 0x7B6D80</pre><pre>(TV5cdecl &quot;yadda yadda, &quot; &quot;blah blah&quot;) --&gt; 0x7B6C00</pre><pre>(TVcallback 3 4 (lambda (x) (* 2 x))) --&gt; 24</pre>
+<pre>
+(TestVictim0) --&gt; 42
+(TV4 &quot;Hello World&quot;) --&gt; 0x7B6D80
+(TV5cdecl &quot;yadda yadda, &quot; &quot;blah blah&quot;) --&gt; 0x7B6C00
+(TVcallback 3 4 (lambda (x) (* 2 x))) --&gt; 24
+</pre>
 
-<p class=MsoNormal>To look inside the pointers returned by TV4 and TV5cdecl, we
-use the Scheme Superglue function <span style='font-family:"Courier New"'>cstring-&gt;string</span>,
+
+<p>To look inside the pointers returned by TV4 and TV5cdecl, we
+use the Scheme Superglue function,
 which takes a Scheme number, which must have the value of a C pointer pointing
-to a C string, and conses up a fresh Scheme string. So, we get the following:<span
-style='font-size:10.0pt;mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+to a C string, and conses up a fresh Scheme string. So, we get the following:</p>
 
-<pre>(cstring-&gt;string (TV4 &quot;Hello World&quot;)) --&gt; &quot;Hello World&quot;</pre><pre>(cstring-&gt;string (TV5cdecl &quot;yadda yadda, &quot; &quot;blah blah&quot;)) --&gt; &quot;yadda yadda, blah blah&quot;</pre>
+<pre>
+(cstring-&gt;string (TV4 &quot;Hello World&quot;)) --&gt; &quot;Hello World&quot;
+(cstring-&gt;string (TV5cdecl &quot;yadda yadda, &quot; &quot;blah blah&quot;)) --&gt; &quot;yadda yadda, blah blah&quot;
+</pre>
+
 
 <h2>Multiary Callbacks: WndProcs</h2>
 
-<pre style='tab-stops:.5in'><span style='font-family:Garamond;mso-fareast-font-family:
-"Times New Roman";mso-bidi-font-family:"Times New Roman"'>Now, in Windows, a WndProc is a quaternary callback, that is, a <o:p></o:p></span></pre>
+<p>Now, in Windows, a WndProc is a quaternary callback, that is, a</p>
 
-<p class=MsoNormal>(lambda (hWnd msg wParam lParam) ...)</p>
+<pre>
+(lambda (hWnd msg wParam lParam) ...)
+</pre>
 
-So, given multi-ary (or multiadic) callbacks, and given that we have a way to populate C structs (see structs.scm in the source below), then we should be able to write Windows applications entirely in Scheme, and we can; here’s “Hello, World!”:
+
+<p>So, given multi-ary (or multiadic) callbacks, and given that we have a way to populate C structs (see structs.scm in the source below), then we should be able to write Windows applications entirely in Scheme, and we can; here’s “Hello, World!”:</p>
 
 <pre>
 (require "gdi32.scm")
@@ -261,35 +422,36 @@ So, given multi-ary (or multiadic) callbacks, and given that we have a way to po
            (DispatchMessageA msg)) ))
 </pre>
 
-<h3 style='tab-stops:45.8pt 91.6pt 137.4pt 183.2pt 229.0pt 274.8pt 320.6pt 366.4pt 412.2pt 458.0pt 503.8pt 549.6pt 595.4pt 641.2pt 687.0pt 732.8pt'>Hostile
-Foreign-Function Interface in SIOD</h3>
 
-<p class=MsoNormal>We wrote a Hostile FFI for George Carette’s wonderful,
+<h2>Hostile Foreign-Function Interface in SIOD</h2>
+
+<p>We wrote a Hostile FFI for George Carette’s wonderful,
 little SIOD program (<a href="http://people.delphi.com/gjc/siod.html">http://people.delphi.com/gjc/siod.html</a>).
 The FFI is hostile because the C code doesn’t need to cooperate. We can run
 kernel32, COM, Ole Automation, etc. Please feel free to download the <a
 href="images/siodffi.zip">Visual
 Studio 6.0 Project</a>. Build it, run it (you may have to adjust the project
 directories in the Debug Tab of the Project\Settings dialog box; make sure the
-program starts in the siodffi\scripts\scheme directory), and type<span
-style='font-size:10.0pt;mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+program starts in the siodffi\scripts\scheme directory), and type</p>
 
 <pre>(load &quot;regress.scm&quot;)</pre>
 
-<p class=MsoNormal>This will run a bunch of tests on Superglue, calling
+
+<p>This will run a bunch of tests on Superglue, calling
 kernel32, calling raw COM, consing up callbacks like the ones documented above,
 and calling OLE Automation. Type</p>
 
 <pre>(load &quot;windows.scm&quot;)</pre>
 
-<p class=MsoNormal>To see “Hello, World!” in action (wowee!!)</p>
 
-<p class=MsoNormal>You can examine what’s going on and how we do it by just
+<p>To see “Hello, World!” in action (wowee!!)</p>
+
+<p>You can examine what’s going on and how we do it by just
 looking at the scheme code in “regress.scm” and backtracking through the
 Superglue code. Most of that code is in “Realload.cpp”, and there isn’t very
 much of it. Superglue consists entirely of the following new Scheme functions
-implemented in Realload.cpp and slib.cpp:<span style='font-size:10.0pt;
-mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+implemented in Realload.cpp and slib.cpp:</p>
+
 <pre>
 init_subr_1 ("GetProcAlist",          GetProcAlist ) ;
 init_subr_1 ("GetProcAlistCDecls",    GetProcAlistCDecls ) ;
@@ -321,94 +483,95 @@ init_subr_1 ("peek-byte",             peekByte ) ;
 init_subr_2 ("poke-byte",             pokeByte ) ;
 </pre>
 
-<p class=MsoNormal>All the rest of the fun stuff is written in Scheme. </p>
 
-<h2 style='tab-stops:45.8pt 91.6pt 137.4pt 183.2pt 229.0pt 274.8pt 320.6pt 366.4pt 412.2pt 458.0pt 503.8pt 549.6pt 595.4pt 641.2pt 687.0pt 732.8pt'>Alternatives</h2>
+<p>All the rest of the fun stuff is written in Scheme.</p>
 
-<p class=MsoNormal>Ok, we have a pretty comprehensive solution to this, but
+<h2>Alternatives</h2>
+
+<p>Ok, we have a pretty comprehensive solution to this, but
 there’s another partial one in the world, too. The Rice University PLT group
 has come up with a system for calling Active X controls from Scheme when those
-controls are scripted in an HTML window. References are below. <span
-style='font-size:10.0pt;mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+controls are scripted in an HTML window. References are below.</p>
 
-<h3 style='tab-stops:45.8pt 91.6pt 137.4pt 183.2pt 229.0pt 274.8pt 320.6pt 366.4pt 412.2pt 458.0pt 503.8pt 549.6pt 595.4pt 641.2pt 687.0pt 732.8pt'>DrScheme
-V100</h3>
+<h3>DrScheme V100</h3>
 
-<p class=MsoNormal>This is very cool. It’s R4RS-compliant, and our gizmo is
+<p>This is very cool. It’s R4RS-compliant, and our gizmo is
 not. But, it only calls ActiveX controls in an HTML context, and we call
 arbitrary C/C++/COM DLLs. See <a
-href="http://www.cs.rice.edu/CS/PLT/packages/drscheme/">http://www.cs.rice.edu/CS/PLT/packages/drscheme/</a><span
-style='font-size:10.0pt;mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
+href="http://www.cs.rice.edu/CS/PLT/packages/drscheme/">http://www.cs.rice.edu/CS/PLT/packages/drscheme/</a></p>
 
 <h2>Why not write safe, high-level Scheme Wrappers?</h2>
 
-<p class=MsoNormal>Now, <span style="mso-spacerun: yes"> </span>I had four
+<p>Now, <span style="mso-spacerun: yes"> </span>I had four
 reasons to opt for designing a &quot;hardcore, unsafe&quot; Hostile FFI over a
 set of sane wrappers: laziness (typeI), laziness (typeII), coverage, and uniquess.
-To elaborate:<o:p></o:p></p>
+To elaborate:&lt;o:p>&lt;/o:p></p>
 
-<p class=MsoNormal>1. Laziness (typeI): the Windows API is enormous: at least
+<ol>
+<li>Laziness (typeI): the Windows API is enormous: at least
 5,000 APIs if one includes Multimedia, DirectX, OLE, (D)COM etc.; just
 enumerate the exports in *.dll in your Windows directory.<span
 style="mso-spacerun: yes">  </span>To cover even a small fraction of it with
-sane wrappers is a huge amount of work.<span style="mso-spacerun: yes"> 
+sane wrappers is a huge amount of work.<span style="mso-spacerun: yes">
 </span>I once did sane wrappers for GL on SGI machines, and that was weeks of
 spade work for a 700-item API that is vastly simpler and more repetitive than
 that of Windows.<span style="mso-spacerun: yes">  </span>I couldn't imagine
 actually trying to do it for Windows in the first place, let alone trying to
-keep up with the deluge of new DLLs hitting the fan continually.<o:p></o:p></p>
+keep up with the deluge of new DLLs hitting the fan continually.&lt;o:p>&lt;/o:p></li>
+</ol>
 
-<p class=MsoNormal>The lazy programmer's way out is to find a generic way to
+
+<p>The lazy programmer's way out is to find a generic way to
 suck up any and all the APIs, and that's the way I took.<span
 style="mso-spacerun: yes">  </span>This approach, BTW, is not different in
 principle than the approch taken by Java FFI, Visual Basic's FFI, and a host of
 others. <span style="mso-spacerun: yes"> </span>I just don't use those language
-systems because I like scheme better (subjective rationale).<o:p></o:p></p>
+systems because I like scheme better (subjective rationale).&lt;o:p>&lt;/o:p></p>
 
-<p class=MsoNormal>2. Laziness (typeII): It's hard enough to learn the minimum,
+<ol>
+<li><p>Laziness (typeII): It's hard enough to learn the minimum,
 required knowledge to write Windows programs. To learn this or that sane
-wrapper system *before* finding out whether it can actually do what you need is
+wrapper system <em>before</em> finding out whether it can actually do what you need is
 burdensome.<span style="mso-spacerun: yes">  </span>For example, I wanted to
 play with MIDI.<span style="mso-spacerun: yes">  </span>I was unable to find any
 way to hook into the Windows MIDI API amongst the current crop of free scheme
-implementations, e.g., DrScheme, VScheme, and SCM.<span style="mso-spacerun:
-yes">  </span>Those are all fabulous systems, but I had to devote some
+implementations, e.g., DrScheme, VScheme, and SCM.Those are all fabulous systems, but I had to devote some
 considerable time to learning them before realizing that I could not find out
 how to work MIDI with them. Note that this was not time spent on Scheme itself,
 but on the libraries and wrappers and interfaces and other accoutrements that
-come with each system. Now, I'm not an expert in those systems, and they *may*
+come with each system. Now, I'm not an expert in those systems, and they <em>may</em>
 have MIDI capability, but I had only finite time to look and I couldn't find it
 within my time horizon.<span style="mso-spacerun: yes">  </span>I had to trade
 this off against how much time it would take me to write an FFI, and that
 turned out to be 3 days (because I already had my own PE loader and I already
 knew the insides of Siod). So this was another subjective point: it was easier
-*for me* to do it my way. <o:p></o:p></p>
-
-
-<p class=MsoNormal>3. Coverage: I sort of touched on this, but there is another
+<em>for me</em> to do it my way. &lt;o:p>&lt;/o:p></p></li>
+<li><p>Coverage: I sort of touched on this, but there is another
 point.<span style="mso-spacerun: yes">  </span>I do not know, today, what
 corners of Windows I will need tomorrow (so this topic might be called
 ignorance or blindness:). I would hate to have to derail my train-of-thought to
 go design yet-another-sane-wrapper before I can get back to playing with
 Windows. So, I trade &quot;sanity&quot; off against cognitive throughput: if I
-can find away to slay the *entire* dragon (and all future dragons, to boot)
+can find away to slay the <em>entire</em> dragon (and all future dragons, to boot)
 with one blow, then I don't ever have to think about it again.<span
 style="mso-spacerun: yes">  </span>I'll gladly take a little insanity and
-usafety in exchange. Subjective again. <o:p></o:p></p>
+usafety in exchange. Subjective again. &lt;o:p>&lt;/o:p></p></li>
+<li><p>Uniqueness: There are lots of sane-wrapper solutions out
+there with their own pros and cons each.<span style="mso-spacerun: yes">
+</span>I really didn't want to add another. &lt;o:p>&lt;/o:p></p></li>
+</ol>
 
-
-<p class=MsoNormal>4. Uniqueness: There are lots of sane-wrapper solutions out
-there with their own pros and cons each.<span style="mso-spacerun: yes"> 
-</span>I really didn't want to add another. <o:p></o:p></p>
 
 <h2>Conclusion</h2>
 
-<p class=MsoNormal>Have fun! Email me at <a href="mailto:brianbec@hotmail.com">brianbec@hotmail.com</a>.
-I’ll be documenting this stuff as time allows. <span style='font-size:10.0pt;
-mso-bidi-font-size:11.0pt'><o:p></o:p></span></p>
 
-</div>
+<p>Have fun! Email me at <a href="mailto:brianbec@hotmail.com">brianbec@hotmail.com</a>.
+I’ll be documenting this stuff as time allows.</p>
 
+<p></div></p>
+
+<p></body></p>
+
+<p></html></p>
 </body>
-
 </html>
